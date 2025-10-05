@@ -5,8 +5,6 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Net.Http;
-using System.Net.Http.Json;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
@@ -21,15 +19,13 @@ namespace ClashXW
 
     public class ClashXWApplicationContext : ApplicationContext
     {
-        private static readonly HttpClient _httpClient = new HttpClient();
-
+        private readonly ClashApiService _apiService;
         private readonly NotifyIcon _notifyIcon;
         private readonly IConfiguration _configuration;
         private Process? _clashProcess;
 
         private readonly string? _executablePath;
         private readonly string? _configPath;
-        private readonly string? _apiBaseUrl;
         private readonly string? _dashboardUrl;
 
         private readonly ToolStripMenuItem _modeMenu;
@@ -51,8 +47,11 @@ namespace ClashXW
 
             _executablePath = _configuration["Clash:ExecutablePath"];
             _configPath = _configuration["Clash:ConfigPath"];
-            _apiBaseUrl = _configuration["Clash:ApiBaseUrl"];
+            var apiBaseUrl = _configuration["Clash:ApiBaseUrl"];
+            var apiSecret = _configuration["Clash:ApiSecret"];
             _dashboardUrl = _configuration["Clash:DashboardUrl"];
+
+            _apiService = new ClashApiService(apiBaseUrl, apiSecret);
 
             // --- Create Menu Structure ---
             _ruleModeItem = new ToolStripMenuItem("Rule", null, OnModeSelected) { Tag = "rule" };
@@ -94,23 +93,9 @@ namespace ClashXW
             await Task.WhenAll(UpdateStateFromConfigsAsync(), UpdateProxyGroupsAsync());
         }
 
-        private async Task<JsonObject?> GetConfigsAsync()
-        {
-            if (string.IsNullOrEmpty(_apiBaseUrl)) return null;
-            try
-            {
-                return await _httpClient.GetFromJsonAsync<JsonObject>($"{_apiBaseUrl}/configs");
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"Failed to get configs: {ex.Message}");
-                return null;
-            }
-        }
-
         private async Task UpdateStateFromConfigsAsync()
         {
-            var configs = await GetConfigsAsync();
+            var configs = await _apiService.GetConfigsAsync();
             if (configs == null) return;
 
             UpdateModeUI(configs);
@@ -132,11 +117,9 @@ namespace ClashXW
         private async void OnModeSelected(object? sender, EventArgs e)
         {
             if (sender is not ToolStripMenuItem { Tag: string newMode }) return;
-            if (string.IsNullOrEmpty(_apiBaseUrl)) return;
             try
             {
-                var payload = new { mode = newMode };
-                await _httpClient.PatchAsJsonAsync($"{_apiBaseUrl}/configs", payload);
+                await _apiService.UpdateModeAsync(newMode);
                 _modeMenu.Text = $"Mode ({newMode})";
             }
             catch (Exception ex) { MessageBox.Show($"Failed to set mode: {ex.Message}", "Error"); }
@@ -144,14 +127,12 @@ namespace ClashXW
 
         private async Task UpdateProxyGroupsAsync()
         {
-            if (string.IsNullOrEmpty(_apiBaseUrl)) return;
-
             foreach (var item in _proxyGroupMenus) { _contextMenu.Items.Remove(item); }
             _proxyGroupMenus.Clear();
 
             try
             {
-                var response = await _httpClient.GetFromJsonAsync<ProxiesResponse>($"{_apiBaseUrl}/proxies");
+                var response = await _apiService.GetProxiesAsync();
                 if (response?.Proxies == null) return;
 
                 var orderedGroups = new List<ProxyGroup>();
@@ -181,12 +162,10 @@ namespace ClashXW
         {
             if (sender is not ToolStripMenuItem { Tag: Tuple<string, string> selection }) return;
             var (groupName, nodeName) = selection;
-            if (string.IsNullOrEmpty(_apiBaseUrl)) return;
 
             try
             {
-                var payload = new { name = nodeName };
-                await _httpClient.PutAsJsonAsync($"{_apiBaseUrl}/proxies/{Uri.EscapeDataString(groupName)}", payload);
+                await _apiService.SelectProxyNodeAsync(groupName, nodeName);
 
                 foreach (var groupMenu in _proxyGroupMenus.Where(m => m.Text?.StartsWith(groupName) == true))
                 {
@@ -224,7 +203,7 @@ namespace ClashXW
         private async void OnSystemProxyClicked(object? sender, EventArgs e)
         {
             var menuItem = (ToolStripMenuItem)sender!;
-            var configs = await GetConfigsAsync();
+            var configs = await _apiService.GetConfigsAsync();
             if (configs == null) { menuItem.Checked = !menuItem.Checked; return; } // Revert checkmark on failure
 
             var expectedProxy = GetProxyAddress(configs);
@@ -252,12 +231,9 @@ namespace ClashXW
         private async void OnTunModeClicked(object? sender, EventArgs e)
         {
             var menuItem = (ToolStripMenuItem)sender!;
-            if (string.IsNullOrEmpty(_apiBaseUrl)) return;
-
             try
             {
-                var payload = new { tun = new { enable = menuItem.Checked } };
-                await _httpClient.PatchAsJsonAsync($"{_apiBaseUrl}/configs", payload);
+                await _apiService.UpdateTunModeAsync(menuItem.Checked);
             }
             catch (Exception ex)
             {
