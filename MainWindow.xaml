@@ -24,9 +24,6 @@
                     <MenuItem Header="Set System Proxy" Name="SystemProxyMenuItem" IsCheckable="True" Click="OnSystemProxyClicked"/>
                     <MenuItem Header="TUN Mode" Name="TunModeMenuItem" IsCheckable="True" Click="OnTunModeClicked"/>
                     <Separator />
-                    <MenuItem Header="Start" Click="OnStart"/>
-                    <MenuItem Header="Stop" Click="OnStop"/>
-                    <Separator />
                     <MenuItem Header="Open Dashboard" Click="OnOpenDashboard"/>
                     <MenuItem Header="Edit Config" Click="OnEditConfig"/>
                     <Separator />

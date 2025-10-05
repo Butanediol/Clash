@@ -37,9 +37,31 @@ namespace ClashXW
             }
 
             _currentConfigPath = ConfigManager.GetCurrentConfigPath();
+            StartClashCore();
             InitializeApiService();
 
             NotifyIcon.ContextMenu.Opened += OnContextMenuOpening;
+        }
+
+        private void StartClashCore()
+        {
+            if (string.IsNullOrEmpty(_executablePath) || !File.Exists(_executablePath))
+            {
+                MessageBox.Show($"Executable not found at: {_executablePath}", "Error");
+                Application.Current.Shutdown();
+                return;
+            }
+            try
+            {
+                var assetsDir = Path.GetDirectoryName(_executablePath);
+                _clashProcess = new Process { StartInfo = new ProcessStartInfo { FileName = _executablePath, Arguments = $"-d \"{assetsDir}\" -f \"{_currentConfigPath}\"", UseShellExecute = false, CreateNoWindow = true } };
+                _clashProcess.Start();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Failed to start Clash process:\n{ex.Message}", "Error");
+                Application.Current.Shutdown();
+            }
         }
 
         private void MainWindow_Loaded(object sender, RoutedEventArgs e)
@@ -290,26 +312,6 @@ namespace ClashXW
                 MessageBox.Show($"Failed to set TUN mode: {ex.Message}", "Error");
                 menuItem.IsChecked = !menuItem.IsChecked; // Revert on failure
             }
-        }
-
-        private void OnStart(object? sender, RoutedEventArgs e)
-        {
-            if (_clashProcess != null && !_clashProcess.HasExited) { MessageBox.Show("Clash process is already running.", "Info"); return; }
-            if (string.IsNullOrEmpty(_executablePath) || !File.Exists(_executablePath)) { MessageBox.Show($"Executable not found at: {_executablePath}", "Error"); return; }
-            try
-            {
-                var assetsDir = Path.GetDirectoryName(_executablePath);
-                _clashProcess = new Process { StartInfo = new ProcessStartInfo { FileName = _executablePath, Arguments = $"-d \"{assetsDir}\" -f \"{_currentConfigPath}\"", UseShellExecute = false, CreateNoWindow = true } };
-                _clashProcess.Start();
-            }
-            catch (Exception ex) { MessageBox.Show($"Failed to start Clash process:\n{ex.Message}", "Error"); }
-        }
-
-        private void OnStop(object? sender, RoutedEventArgs e)
-        {
-            if (_clashProcess == null || _clashProcess.HasExited) { MessageBox.Show("Clash process is not running.", "Info"); return; }
-            try { _clashProcess.Kill(); _clashProcess = null; }
-            catch (Exception ex) { MessageBox.Show($"Failed to stop Clash process:\n{ex.Message}", "Error"); }
         }
 
         private void OnOpenDashboard(object? sender, RoutedEventArgs e)
