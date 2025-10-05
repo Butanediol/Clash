@@ -9,7 +9,6 @@ using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using Microsoft.Extensions.Configuration;
 
 namespace ClashXW
 {
@@ -19,9 +18,7 @@ namespace ClashXW
     public partial class MainWindow : Window
     {
         private ClashApiService? _apiService;
-        private readonly IConfiguration _configuration;
         private Process? _clashProcess;
-
         private readonly string? _executablePath;
         private string _currentConfigPath;
 
@@ -32,12 +29,11 @@ namespace ClashXW
             InitializeComponent();
             ConfigManager.EnsureDefaultConfigExists();
 
-            _configuration = new ConfigurationBuilder()
-                .SetBasePath(Directory.GetCurrentDirectory())
-                .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
-                .Build();
-
-            _executablePath = _configuration["Clash:ExecutablePath"];
+            var parentDir = Directory.GetParent(AppContext.BaseDirectory)?.FullName;
+            if (parentDir != null)
+            {
+                _executablePath = Path.Combine(parentDir, "ClashAssets", "clash.exe");
+            }
 
             _currentConfigPath = ConfigManager.GetCurrentConfigPath();
             InitializeApiService();
