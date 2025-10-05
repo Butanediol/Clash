@@ -1,0 +1,13 @@
+# Visual Studio cache files
+.vs/
+
+# Build results
+[Bb]in/
+[Oo]bj/
+
+# User-specific files
+*.user
+*.suo
+
+# Example API responses
+example api response/
