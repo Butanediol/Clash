@@ -1,31 +1,25 @@
 # ClashXW
 
-## Development & Building
+## Development
 
 ### Prerequisites
 
-- [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)
-
-### Configuration
-
-1.  **Clash Executable Path**: Before building, you must edit the `appsettings.json` file and set the `Clash:ExecutablePath` to the correct absolute path of your `clash-binary.exe`.
-
-    ```json
-    {
-      "Clash": {
-        "ExecutablePath": "C:\\path\\to\\your\\clash-binary.exe"
-      }
-    }
-    ```
-
-2.  **YAML Configurations**: The application stores its configuration files in `%AppData%\Roaming\ClashXW\Config\`. On first run, it will automatically create a default `config.yaml` in this directory if one doesn't exist.
+-   [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)
 
 ### Building
 
-To build the project, run the following command from the root directory:
+To build the project for debugging:
 
 ```sh
-dotnet build --configuration Release
+dotnet build
 ```
 
-The compiled application will be located in the `bin/Release/net8.0-windows/` directory.
+### Publishing
+
+To create a release build:
+
+```sh
+dotnet publish --configuration Release
+```
+
+The self-contained application will be located in the `bin/Release/net8.0-windows/publish/` directory.
