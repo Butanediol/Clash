@@ -24,11 +24,11 @@ jobs:
     - name: Restore dependencies
       run: dotnet restore
 
-    - name: Build
-      run: dotnet build --configuration Release --no-restore
+    - name: Publish
+      run: dotnet publish --configuration Release --no-restore --self-contained
 
     - name: Upload Artifact
       uses: actions/upload-artifact@v4
       with:
         name: ClashXW-windows
-        path: bin/Release/net8.0-windows/
+        path: bin/Release/net8.0-windows/publish/
