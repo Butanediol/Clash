@@ -9,6 +9,7 @@ using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 
 namespace ClashXW
 {
@@ -350,6 +351,27 @@ namespace ClashXW
             if (_clashProcess != null && !_clashProcess.HasExited) { _clashProcess.Kill(); }
             NotifyIcon.Dispose();
             Application.Current.Shutdown();
+        }
+
+        private void OnContextMenuKeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.KeyboardDevice.Modifiers == ModifierKeys.Control)
+            {
+                switch (e.Key)
+                {
+                    case Key.O:
+                        OnOpenConfigFolder(sender, e);
+                        break;
+                    case Key.S:
+                        SystemProxyMenuItem.IsChecked = !SystemProxyMenuItem.IsChecked;
+                        OnSystemProxyClicked(SystemProxyMenuItem, e);
+                        break;
+                    case Key.E:
+                        TunModeMenuItem.IsChecked = !TunModeMenuItem.IsChecked;
+                        OnTunModeClicked(TunModeMenuItem, e);
+                        break;
+                }
+            }
         }
     }
 }
