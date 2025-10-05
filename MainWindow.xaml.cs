@@ -279,7 +279,8 @@ namespace ClashXW
             if (string.IsNullOrEmpty(_executablePath) || !File.Exists(_executablePath)) { MessageBox.Show($"Executable not found at: {_executablePath}", "Error"); return; }
             try
             {
-                _clashProcess = new Process { StartInfo = new ProcessStartInfo { FileName = _executablePath, Arguments = $"-f \"{_currentConfigPath}\"", UseShellExecute = false, CreateNoWindow = true } };
+                var assetsDir = Path.GetDirectoryName(_executablePath);
+                _clashProcess = new Process { StartInfo = new ProcessStartInfo { FileName = _executablePath, Arguments = $"-d \"{assetsDir}\" -f \"{_currentConfigPath}\"", UseShellExecute = false, CreateNoWindow = true } };
                 _clashProcess.Start();
             }
             catch (Exception ex) { MessageBox.Show($"Failed to start Clash process:\n{ex.Message}", "Error"); }
