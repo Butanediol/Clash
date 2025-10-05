@@ -54,5 +54,12 @@ namespace ClashXW
             var payload = new { name = nodeName };
             return _httpClient.PutAsJsonAsync($"{_apiBaseUrl}/proxies/{Uri.EscapeDataString(groupName)}", payload);
         }
+
+        public Task ReloadConfigAsync(string configPath)
+        {
+            if (string.IsNullOrEmpty(_apiBaseUrl)) return Task.CompletedTask;
+            var payload = new { path = configPath };
+            return _httpClient.PutAsJsonAsync($"{_apiBaseUrl}/configs?force=true", payload);
+        }
     }
 }

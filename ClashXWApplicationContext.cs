@@ -19,14 +19,13 @@ namespace ClashXW
 
     public class ClashXWApplicationContext : ApplicationContext
     {
-        private readonly ClashApiService _apiService;
+        private ClashApiService? _apiService;
         private readonly NotifyIcon _notifyIcon;
         private readonly IConfiguration _configuration;
         private Process? _clashProcess;
 
         private readonly string? _executablePath;
-        private readonly string? _configPath;
-        private readonly string? _dashboardUrl;
+        private string _currentConfigPath;
 
         private readonly ToolStripMenuItem _modeMenu;
         private readonly ToolStripMenuItem _ruleModeItem;
@@ -34,24 +33,26 @@ namespace ClashXW
         private readonly ToolStripMenuItem _globalModeItem;
         private readonly ToolStripMenuItem _systemProxyMenuItem;
         private readonly ToolStripMenuItem _tunModeMenuItem;
+        private readonly ToolStripMenuItem _configMenu;
 
         private readonly List<ToolStripMenuItem> _proxyGroupMenus = new List<ToolStripMenuItem>();
         private readonly ContextMenuStrip _contextMenu;
 
         public ClashXWApplicationContext()
         {
+            // Ensure default config exists before anything else
+            ConfigManager.EnsureDefaultConfigExists();
+
             _configuration = new ConfigurationBuilder()
                 .SetBasePath(Directory.GetCurrentDirectory())
                 .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
                 .Build();
 
             _executablePath = _configuration["Clash:ExecutablePath"];
-            _configPath = _configuration["Clash:ConfigPath"];
-            var apiBaseUrl = _configuration["Clash:ApiBaseUrl"];
-            var apiSecret = _configuration["Clash:ApiSecret"];
-            _dashboardUrl = _configuration["Clash:DashboardUrl"];
 
-            _apiService = new ClashApiService(apiBaseUrl, apiSecret);
+            // Initialize services and state from YAML config
+            _currentConfigPath = ConfigManager.GetCurrentConfigPath();
+            InitializeApiService();
 
             // --- Create Menu Structure ---
             _ruleModeItem = new ToolStripMenuItem("Rule", null, OnModeSelected) { Tag = "rule" };
@@ -59,14 +60,16 @@ namespace ClashXW
             _globalModeItem = new ToolStripMenuItem("Global", null, OnModeSelected) { Tag = "global" };
             _modeMenu = new ToolStripMenuItem("Mode", null, new ToolStripItem[] { _ruleModeItem, _directModeItem, _globalModeItem });
 
+            _configMenu = new ToolStripMenuItem("Configuration");
             _systemProxyMenuItem = new ToolStripMenuItem("Set System Proxy", null, OnSystemProxyClicked) { CheckOnClick = true };
             _tunModeMenuItem = new ToolStripMenuItem("TUN Mode", null, OnTunModeClicked) { CheckOnClick = true };
 
             _contextMenu = new ContextMenuStrip();
             _contextMenu.Opening += OnContextMenuOpening;
+            _contextMenu.Items.Add(_configMenu);
             _contextMenu.Items.Add(_modeMenu);
             _contextMenu.Items.Add(new ToolStripSeparator()); // Separator after Mode
-            // Proxy group menus will be inserted here at index 2
+            // Proxy group menus will be inserted here
             _contextMenu.Items.Add(new ToolStripSeparator()); // Separator after proxy groups
             _contextMenu.Items.Add(_systemProxyMenuItem);
             _contextMenu.Items.Add(_tunModeMenuItem);
@@ -88,13 +91,63 @@ namespace ClashXW
             };
         }
 
+        private void InitializeApiService()
+        {
+            var apiDetails = ConfigManager.ReadApiDetails(_currentConfigPath);
+            if (apiDetails != null)
+            {
+                _apiService = new ClashApiService(apiDetails.BaseUrl, apiDetails.Secret);
+            }
+            else
+            {
+                _apiService = null;
+                MessageBox.Show($"Failed to read API details from {_currentConfigPath}. API features will be disabled.", "Config Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }
+        }
+
         private async void OnContextMenuOpening(object? sender, CancelEventArgs e)
         {
+            UpdateConfigsMenu();
+            if (_apiService == null) return;
             await Task.WhenAll(UpdateStateFromConfigsAsync(), UpdateProxyGroupsAsync());
+        }
+
+        private void UpdateConfigsMenu()
+        {
+            _configMenu.DropDownItems.Clear();
+            var configs = ConfigManager.GetAvailableConfigs();
+            foreach (var configPath in configs)
+            {
+                var menuItem = new ToolStripMenuItem(Path.GetFileName(configPath), null, OnConfigSelected)
+                {
+                    Tag = configPath,
+                    Checked = configPath.Equals(_currentConfigPath, StringComparison.OrdinalIgnoreCase)
+                };
+                _configMenu.DropDownItems.Add(menuItem);
+            }
+        }
+
+        private async void OnConfigSelected(object? sender, EventArgs e)
+        {
+            if (sender is not ToolStripMenuItem { Tag: string newPath }) return;
+            if (_apiService == null) return;
+
+            try
+            {
+                await _apiService.ReloadConfigAsync(newPath);
+                _currentConfigPath = newPath;
+                ConfigManager.SetCurrentConfigPath(newPath);
+                InitializeApiService(); // Re-initialize with new details from the new config
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Failed to switch configuration: {ex.Message}", "Error");
+            }
         }
 
         private async Task UpdateStateFromConfigsAsync()
         {
+            if (_apiService == null) return;
             var configs = await _apiService.GetConfigsAsync();
             if (configs == null) return;
 
@@ -117,6 +170,7 @@ namespace ClashXW
         private async void OnModeSelected(object? sender, EventArgs e)
         {
             if (sender is not ToolStripMenuItem { Tag: string newMode }) return;
+            if (_apiService == null) return;
             try
             {
                 await _apiService.UpdateModeAsync(newMode);
@@ -127,6 +181,8 @@ namespace ClashXW
 
         private async Task UpdateProxyGroupsAsync()
         {
+            if (_apiService == null) return;
+
             foreach (var item in _proxyGroupMenus) { _contextMenu.Items.Remove(item); }
             _proxyGroupMenus.Clear();
 
@@ -153,7 +209,8 @@ namespace ClashXW
                     _proxyGroupMenus.Add(groupMenu);
                 }
 
-                for (int i = 0; i < _proxyGroupMenus.Count; i++) { _contextMenu.Items.Insert(2 + i, _proxyGroupMenus[i]); }
+                // Insert new menus at the correct position (after Mode and its separator)
+                for (int i = 0; i < _proxyGroupMenus.Count; i++) { _contextMenu.Items.Insert(3 + i, _proxyGroupMenus[i]); }
             }
             catch (Exception ex) { Debug.WriteLine($"Failed to get proxy groups: {ex.Message}"); }
         }
@@ -161,6 +218,7 @@ namespace ClashXW
         private async void OnProxyNodeSelected(object? sender, EventArgs e)
         {
             if (sender is not ToolStripMenuItem { Tag: Tuple<string, string> selection }) return;
+            if (_apiService == null) return;
             var (groupName, nodeName) = selection;
 
             try
@@ -203,6 +261,8 @@ namespace ClashXW
         private async void OnSystemProxyClicked(object? sender, EventArgs e)
         {
             var menuItem = (ToolStripMenuItem)sender!;
+            if (_apiService == null) { menuItem.Checked = !menuItem.Checked; return; }
+
             var configs = await _apiService.GetConfigsAsync();
             if (configs == null) { menuItem.Checked = !menuItem.Checked; return; } // Revert checkmark on failure
 
@@ -231,6 +291,8 @@ namespace ClashXW
         private async void OnTunModeClicked(object? sender, EventArgs e)
         {
             var menuItem = (ToolStripMenuItem)sender!;
+            if (_apiService == null) { menuItem.Checked = !menuItem.Checked; return; }
+
             try
             {
                 await _apiService.UpdateTunModeAsync(menuItem.Checked);
@@ -248,7 +310,7 @@ namespace ClashXW
             if (string.IsNullOrEmpty(_executablePath) || !File.Exists(_executablePath)) { MessageBox.Show($"Executable not found at: {_executablePath}", "Error"); return; }
             try
             {
-                _clashProcess = new Process { StartInfo = new ProcessStartInfo { FileName = _executablePath, Arguments = $"-f {_configPath}", UseShellExecute = false, CreateNoWindow = true } };
+                _clashProcess = new Process { StartInfo = new ProcessStartInfo { FileName = _executablePath, Arguments = $"-f \"{_currentConfigPath}\"", UseShellExecute = false, CreateNoWindow = true } };
                 _clashProcess.Start();
             }
             catch (Exception ex) { MessageBox.Show($"Failed to start Clash process:\n{ex.Message}", "Error"); }
@@ -263,15 +325,16 @@ namespace ClashXW
 
         private void OnOpenDashboard(object? sender, EventArgs e)
         {
-            if (string.IsNullOrEmpty(_dashboardUrl)) return;
-            try { Process.Start(new ProcessStartInfo(_dashboardUrl) { UseShellExecute = true }); }
+            var apiDetails = ConfigManager.ReadApiDetails(_currentConfigPath);
+            if (apiDetails == null || string.IsNullOrEmpty(apiDetails.DashboardUrl)) return;
+            try { Process.Start(new ProcessStartInfo(apiDetails.DashboardUrl) { UseShellExecute = true }); }
             catch (Exception ex) { MessageBox.Show($"Failed to open dashboard:\n{ex.Message}", "Error"); }
         }
 
         private void OnEditConfig(object? sender, EventArgs e)
         {
-            if (string.IsNullOrEmpty(_configPath) || !File.Exists(_configPath)) { MessageBox.Show($"Config file not found at: {_configPath}", "Error"); return; }
-            try { Process.Start(new ProcessStartInfo("notepad.exe", _configPath) { UseShellExecute = true }); }
+            if (string.IsNullOrEmpty(_currentConfigPath) || !File.Exists(_currentConfigPath)) { MessageBox.Show($"Config file not found at: {_currentConfigPath}", "Error"); return; }
+            try { Process.Start(new ProcessStartInfo("notepad.exe", _currentConfigPath) { UseShellExecute = true }); }
             catch (Exception ex) { MessageBox.Show($"Failed to open config file:\n{ex.Message}", "Error"); }
         }
 
