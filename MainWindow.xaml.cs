@@ -23,6 +23,7 @@ namespace ClashXW
         private string _currentConfigPath;
 
         private readonly List<MenuItem> _proxyGroupMenus = new List<MenuItem>();
+        private MenuItem? _connectionErrorMenuItem;
 
         public MainWindow()
         {
@@ -62,9 +63,27 @@ namespace ClashXW
 
         private async void OnContextMenuOpening(object? sender, RoutedEventArgs e)
         {
+            if (_connectionErrorMenuItem != null)
+            {
+                NotifyIcon.ContextMenu.Items.Remove(_connectionErrorMenuItem);
+                _connectionErrorMenuItem = null;
+            }
+
             UpdateConfigsMenu();
             if (_apiService == null) return;
-            await Task.WhenAll(UpdateStateFromConfigsAsync(), UpdateProxyGroupsAsync());
+
+            try
+            {
+                await Task.WhenAll(UpdateStateFromConfigsAsync(), UpdateProxyGroupsAsync());
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Failed to update state from API: {ex.Message}");
+                foreach (var item in _proxyGroupMenus) { NotifyIcon.ContextMenu.Items.Remove(item); }
+                _proxyGroupMenus.Clear();
+                _connectionErrorMenuItem = new MenuItem { Header = "Failed to connect to Clash core", IsEnabled = false };
+                NotifyIcon.ContextMenu.Items.Insert(3, _connectionErrorMenuItem);
+            }
         }
 
         private void UpdateConfigsMenu()
