@@ -72,7 +72,6 @@ namespace ClashXW
 
                 var controller = yamlObject?.GetValueOrDefault("external-controller")?.ToString();
                 var secret = yamlObject?.GetValueOrDefault("secret")?.ToString();
-                var ui = yamlObject?.GetValueOrDefault("external-ui")?.ToString();
 
                 if (string.IsNullOrEmpty(controller))
                 {
@@ -80,7 +79,7 @@ namespace ClashXW
                 }
 
                 var baseUrl = $"http://{controller}";
-                var dashboardUrl = $"{baseUrl}/{ui}";
+                var dashboardUrl = $"{baseUrl}/ui";
 
                 return new ApiDetails(baseUrl, secret, dashboardUrl);
             }
