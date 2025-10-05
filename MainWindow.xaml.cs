@@ -329,6 +329,21 @@ namespace ClashXW
             catch (Exception ex) { MessageBox.Show($"Failed to open config file:\n{ex.Message}", "Error"); }
         }
 
+        private void OnOpenConfigFolder(object? sender, RoutedEventArgs e)
+        {
+            if (string.IsNullOrEmpty(_currentConfigPath)) return;
+            var configFolder = Path.GetDirectoryName(_currentConfigPath);
+            if (configFolder == null || !Directory.Exists(configFolder)) return;
+            try
+            {
+                Process.Start(new ProcessStartInfo(configFolder) { UseShellExecute = true });
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Failed to open config folder:\n{ex.Message}", "Error");
+            }
+        }
+
         private void OnExit(object? sender, RoutedEventArgs e)
         {
             if (SystemProxyMenuItem.IsChecked) { SystemProxyManager.DisableProxy(); }

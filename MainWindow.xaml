@@ -26,6 +26,7 @@
                     <Separator />
                     <MenuItem Header="Open Dashboard" Click="OnOpenDashboard"/>
                     <MenuItem Header="Edit Config" Click="OnEditConfig"/>
+                    <MenuItem Header="Open Config Folder" Click="OnOpenConfigFolder"/>
                     <Separator />
                     <MenuItem Header="Exit" Click="OnExit"/>
                 </ContextMenu>
