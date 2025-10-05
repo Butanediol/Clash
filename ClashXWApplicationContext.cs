@@ -59,8 +59,11 @@ namespace ClashXW
             _directModeItem = new ToolStripMenuItem("Direct", null, OnModeSelected) { Tag = "direct" };
             _globalModeItem = new ToolStripMenuItem("Global", null, OnModeSelected) { Tag = "global" };
             _modeMenu = new ToolStripMenuItem("Mode", null, new ToolStripItem[] { _ruleModeItem, _directModeItem, _globalModeItem });
+            _modeMenu.DropDown.MouseWheel += OnMenuMouseWheel;
 
             _configMenu = new ToolStripMenuItem("Configuration");
+            _configMenu.DropDown.MouseWheel += OnMenuMouseWheel;
+
             _systemProxyMenuItem = new ToolStripMenuItem("Set System Proxy", null, OnSystemProxyClicked) { CheckOnClick = true };
             _tunModeMenuItem = new ToolStripMenuItem("TUN Mode", null, OnTunModeClicked) { CheckOnClick = true };
 
@@ -206,6 +209,7 @@ namespace ClashXW
                     { Tag = new Tuple<string, string>(group.Name, nodeName), Checked = nodeName.Equals(group.Now, StringComparison.OrdinalIgnoreCase) }).ToArray<ToolStripItem>();
 
                     var groupMenu = new ToolStripMenuItem($"{group.Name} ({group.Now})", null, groupSubItems);
+                    groupMenu.DropDown.MouseWheel += OnMenuMouseWheel;
                     _proxyGroupMenus.Add(groupMenu);
                 }
 
@@ -236,6 +240,18 @@ namespace ClashXW
                 }
             }
             catch (Exception ex) { MessageBox.Show($"Failed to set proxy node: {ex.Message}", "Error"); }
+        }
+
+        private void OnMenuMouseWheel(object? sender, MouseEventArgs e)
+        {
+            if (e.Delta > 0)
+            {
+                SendKeys.SendWait("{UP}");
+            }
+            else
+            {
+                SendKeys.SendWait("{DOWN}");
+            }
         }
 
         private string? GetProxyAddress(JsonObject configs)
