@@ -14,9 +14,9 @@
                 <ContextMenu KeyDown="OnContextMenuKeyDown">
                     <MenuItem Header="Configuration" Name="ConfigMenu" />
                     <MenuItem Header="Mode" Name="ModeMenu">
-                        <MenuItem Header="Rule" Name="RuleModeItem" Tag="rule" Click="OnModeSelected" IsCheckable="True"/>
-                        <MenuItem Header="Direct" Name="DirectModeItem" Tag="direct" Click="OnModeSelected" IsCheckable="True"/>
-                        <MenuItem Header="Global" Name="GlobalModeItem" Tag="global" Click="OnModeSelected" IsCheckable="True"/>
+                        <MenuItem Header="Rule" Name="RuleModeItem" Tag="rule" Click="OnModeSelected" IsCheckable="True" InputGestureText="Alt+R"/>
+                        <MenuItem Header="Direct" Name="DirectModeItem" Tag="direct" Click="OnModeSelected" IsCheckable="True" InputGestureText="Alt+D"/>
+                        <MenuItem Header="Global" Name="GlobalModeItem" Tag="global" Click="OnModeSelected" IsCheckable="True" InputGestureText="Alt+G"/>
                     </MenuItem>
                     <Separator />
                     <!-- Proxy group menus will be inserted here -->
@@ -24,7 +24,7 @@
                     <MenuItem Header="Set System Proxy" Name="SystemProxyMenuItem" IsCheckable="True" Click="OnSystemProxyClicked" InputGestureText="Ctrl+S"/>
                     <MenuItem Header="TUN Mode" Name="TunModeMenuItem" IsCheckable="True" Click="OnTunModeClicked" InputGestureText="Ctrl+E"/>
                     <Separator />
-                    <MenuItem Header="Open Dashboard" Click="OnOpenDashboard"/>
+                    <MenuItem Header="Open Dashboard" Click="OnOpenDashboard" InputGestureText="Ctrl+D"/>
                     <MenuItem Header="Edit Config" Click="OnEditConfig"/>
                     <MenuItem Header="Open Config Folder" Click="OnOpenConfigFolder" InputGestureText="Ctrl+O"/>
                     <Separator />

@@ -370,6 +370,24 @@ namespace ClashXW
                         TunModeMenuItem.IsChecked = !TunModeMenuItem.IsChecked;
                         OnTunModeClicked(TunModeMenuItem, e);
                         break;
+                    case Key.D:
+                        OnOpenDashboard(sender, e);
+                        break;
+                }
+            }
+            else if (e.KeyboardDevice.Modifiers == ModifierKeys.Alt)
+            {
+                switch (e.Key)
+                {
+                    case Key.G:
+                        OnModeSelected(GlobalModeItem, e);
+                        break;
+                    case Key.R:
+                        OnModeSelected(RuleModeItem, e);
+                        break;
+                    case Key.D:
+                        OnModeSelected(DirectModeItem, e);
+                        break;
                 }
             }
         }
