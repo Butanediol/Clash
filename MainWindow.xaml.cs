@@ -107,8 +107,17 @@ namespace ClashXW
 
         private void UpdateConfigsMenu()
         {
-            ConfigMenu.Items.Clear();
+            // Remove only config items, keep separator and buttons at the end
+            var itemsToRemove = ConfigMenu.Items.OfType<MenuItem>()
+                .Where(item => item.Tag is string)
+                .ToList();
+            foreach (var item in itemsToRemove)
+            {
+                ConfigMenu.Items.Remove(item);
+            }
+
             var configs = ConfigManager.GetAvailableConfigs();
+            int insertIndex = 0;
             foreach (var configPath in configs)
             {
                 var menuItem = new MenuItem
@@ -118,7 +127,7 @@ namespace ClashXW
                     IsChecked = configPath.Equals(_currentConfigPath, StringComparison.OrdinalIgnoreCase)
                 };
                 menuItem.Click += OnConfigSelected;
-                ConfigMenu.Items.Add(menuItem);
+                ConfigMenu.Items.Insert(insertIndex++, menuItem);
             }
         }
 

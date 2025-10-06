@@ -24,9 +24,11 @@
                     <MenuItem Header="TUN Mode" Name="TunModeMenuItem" IsCheckable="True" Click="OnTunModeClicked" InputGestureText="Ctrl+E"/>
                     <Separator />
                     <MenuItem Header="Open Dashboard" Click="OnOpenDashboard" InputGestureText="Ctrl+D"/>
-                    <MenuItem Header="Edit Config" Click="OnEditConfig"/>
-                    <MenuItem Header="Open Config Folder" Click="OnOpenConfigFolder" InputGestureText="Ctrl+O"/>
-                    <MenuItem Header="Configuration" Name="ConfigMenu" />
+                    <MenuItem Header="Configuration" Name="ConfigMenu">
+                        <Separator />
+                        <MenuItem Header="Edit Config" Click="OnEditConfig"/>
+                        <MenuItem Header="Open Config Folder" Click="OnOpenConfigFolder" InputGestureText="Ctrl+O"/>
+                    </MenuItem>
                     <Separator />
                     <MenuItem Header="Exit" Click="OnExit"/>
                 </ContextMenu>
