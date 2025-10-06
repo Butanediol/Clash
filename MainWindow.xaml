@@ -12,7 +12,6 @@
             ToolTipText="ClashXW">
             <tb:TaskbarIcon.ContextMenu>
                 <ContextMenu KeyDown="OnContextMenuKeyDown">
-                    <MenuItem Header="Configuration" Name="ConfigMenu" />
                     <MenuItem Header="Mode" Name="ModeMenu">
                         <MenuItem Header="Rule" Name="RuleModeItem" Tag="rule" Click="OnModeSelected" IsCheckable="True" InputGestureText="Alt+R"/>
                         <MenuItem Header="Direct" Name="DirectModeItem" Tag="direct" Click="OnModeSelected" IsCheckable="True" InputGestureText="Alt+D"/>
@@ -27,6 +26,7 @@
                     <MenuItem Header="Open Dashboard" Click="OnOpenDashboard" InputGestureText="Ctrl+D"/>
                     <MenuItem Header="Edit Config" Click="OnEditConfig"/>
                     <MenuItem Header="Open Config Folder" Click="OnOpenConfigFolder" InputGestureText="Ctrl+O"/>
+                    <MenuItem Header="Configuration" Name="ConfigMenu" />
                     <Separator />
                     <MenuItem Header="Exit" Click="OnExit"/>
                 </ContextMenu>

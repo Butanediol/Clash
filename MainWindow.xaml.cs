@@ -31,11 +31,7 @@ namespace ClashXW
             InitializeComponent();
             ConfigManager.EnsureDefaultConfigExists();
 
-            var parentDir = Directory.GetParent(AppContext.BaseDirectory)?.FullName;
-            if (parentDir != null)
-            {
-                _executablePath = Path.Combine(parentDir, "ClashAssets", "clash.exe");
-            }
+            _executablePath = Path.Combine(AppContext.BaseDirectory, "ClashAssets", "clash.exe");
 
             _currentConfigPath = ConfigManager.GetCurrentConfigPath();
             StartClashCore();
@@ -218,7 +214,7 @@ namespace ClashXW
                     _proxyGroupMenus.Add(groupMenu);
                 }
 
-                for (int i = 0; i < _proxyGroupMenus.Count; i++) { NotifyIcon.ContextMenu.Items.Insert(3 + i, _proxyGroupMenus[i]); }
+                for (int i = 0; i < _proxyGroupMenus.Count; i++) { NotifyIcon.ContextMenu.Items.Insert(2 + i, _proxyGroupMenus[i]); }
             }
             catch (Exception ex) { Debug.WriteLine($"Failed to get proxy groups: {ex.Message}"); }
         }
