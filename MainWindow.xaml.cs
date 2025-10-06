@@ -26,6 +26,10 @@ namespace ClashXW
         private readonly List<MenuItem> _proxyGroupMenus = new List<MenuItem>();
         private MenuItem? _connectionErrorMenuItem;
 
+        // Cache for menu state
+        private JsonObject? _cachedConfigs;
+        private ProxiesResponse? _cachedProxies;
+
         public MainWindow()
         {
             InitializeComponent();
@@ -91,9 +95,35 @@ namespace ClashXW
             UpdateConfigsMenu();
             if (_apiService == null) return;
 
+            // Show cached state immediately if available
+            if (_cachedConfigs != null)
+            {
+                UpdateStateFromConfigs(_cachedConfigs);
+            }
+            if (_cachedProxies != null)
+            {
+                UpdateProxyGroupsUI(_cachedProxies);
+            }
+
+            // Fetch fresh data in background and update
             try
             {
-                await Task.WhenAll(UpdateStateFromConfigsAsync(), UpdateProxyGroupsAsync());
+                var configsTask = _apiService.GetConfigsAsync();
+                var proxiesTask = _apiService.GetProxiesAsync();
+
+                await Task.WhenAll(configsTask, proxiesTask);
+
+                _cachedConfigs = await configsTask;
+                _cachedProxies = await proxiesTask;
+
+                if (_cachedConfigs != null)
+                {
+                    UpdateStateFromConfigs(_cachedConfigs);
+                }
+                if (_cachedProxies != null)
+                {
+                    UpdateProxyGroupsUI(_cachedProxies);
+                }
             }
             catch (Exception ex)
             {
@@ -152,12 +182,8 @@ namespace ClashXW
             }
         }
 
-        private async Task UpdateStateFromConfigsAsync()
+        private void UpdateStateFromConfigs(JsonObject configs)
         {
-            if (_apiService == null) return;
-            var configs = await _apiService.GetConfigsAsync();
-            if (configs == null) return;
-
             UpdateModeUI(configs);
             UpdateSystemProxyState(configs);
             UpdateTunModeState(configs);
@@ -192,39 +218,32 @@ namespace ClashXW
             }
         }
 
-        private async Task UpdateProxyGroupsAsync()
+        private void UpdateProxyGroupsUI(ProxiesResponse response)
         {
-            if (_apiService == null) return;
-
             _proxyGroupMenus.ForEach(item => NotifyIcon.ContextMenu.Items.Remove(item));
             _proxyGroupMenus.Clear();
 
-            try
-            {
-                var response = await _apiService.GetProxiesAsync();
-                if (response?.Proxies == null) return;
+            if (response?.Proxies == null) return;
 
-                var orderedGroups = response.Proxies.TryGetValue("GLOBAL", out var globalGroup) && globalGroup.All != null
-                    ? globalGroup.All
-                        .Select(groupName => response.Proxies.TryGetValue(groupName, out var pg) ? pg : null)
-                        .Where(pg => pg != null)
-                        .Cast<ProxyGroup>()
-                        .ToList()
-                    : response.Proxies.Values.ToList();
-
-                var selectorGroups = orderedGroups
-                    .Where(p => p.Type.Equals("Selector", StringComparison.OrdinalIgnoreCase))
-                    .Select(group => CreateProxyGroupMenuItem(group))
-                    .ToList();
-
-                _proxyGroupMenus.AddRange(selectorGroups);
-                
-                selectorGroups
-                    .Select((menu, index) => (menu, index))
+            var orderedGroups = response.Proxies.TryGetValue("GLOBAL", out var globalGroup) && globalGroup.All != null
+                ? globalGroup.All
+                    .Select(groupName => response.Proxies.TryGetValue(groupName, out var pg) ? pg : null)
+                    .Where(pg => pg != null)
+                    .Cast<ProxyGroup>()
                     .ToList()
-                    .ForEach(pair => NotifyIcon.ContextMenu.Items.Insert(2 + pair.index, pair.menu));
-            }
-            catch (Exception ex) { Debug.WriteLine($"Failed to get proxy groups: {ex.Message}"); }
+                : response.Proxies.Values.ToList();
+
+            var selectorGroups = orderedGroups
+                .Where(p => p.Type.Equals("Selector", StringComparison.OrdinalIgnoreCase))
+                .Select(group => CreateProxyGroupMenuItem(group))
+                .ToList();
+
+            _proxyGroupMenus.AddRange(selectorGroups);
+
+            selectorGroups
+                .Select((menu, index) => (menu, index))
+                .ToList()
+                .ForEach(pair => NotifyIcon.ContextMenu.Items.Insert(2 + pair.index, pair.menu));
         }
 
         private MenuItem CreateProxyGroupMenuItem(ProxyGroup group)
