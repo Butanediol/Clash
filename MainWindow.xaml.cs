@@ -175,12 +175,18 @@ namespace ClashXW
         {
             if (sender is not MenuItem { Tag: string newMode }) return;
             if (_apiService == null) return;
+
             try
             {
                 await _apiService.UpdateModeAsync(newMode);
-                ModeMenu.Header = $"Mode ({newMode})";
             }
-            catch (Exception ex) { MessageBox.Show($"Failed to set mode: {ex.Message}", "Error"); }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Failed to set mode: {ex.Message}", "Error");
+            }
+
+            // Close context menu - state will refresh on next open
+            NotifyIcon.ContextMenu.IsOpen = false;
         }
 
         private async Task UpdateProxyGroupsAsync()
@@ -237,21 +243,14 @@ namespace ClashXW
             try
             {
                 await _apiService.SelectProxyNodeAsync(groupName, nodeName);
-
-                foreach (var groupMenu in _proxyGroupMenus)
-                {
-                    if (groupMenu.Header is string headerString && headerString.StartsWith(groupName))
-                    {
-                        groupMenu.Header = $"{groupName} ({nodeName})";
-                        foreach (MenuItem nodeItem in groupMenu.Items)
-                        {
-                            if (nodeItem.Tag is Tuple<string, string> tag) { nodeItem.IsChecked = tag.Item2 == nodeName; }
-                        }
-                        break;
-                    }
-                }
             }
-            catch (Exception ex) { MessageBox.Show($"Failed to set proxy node: {ex.Message}", "Error"); }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Failed to set proxy node: {ex.Message}", "Error");
+            }
+
+            // Close context menu - state will refresh on next open
+            NotifyIcon.ContextMenu.IsOpen = false;
         }
 
         private string? GetProxyAddress(JsonObject configs)
@@ -277,21 +276,35 @@ namespace ClashXW
         private async void OnSystemProxyClicked(object? sender, RoutedEventArgs e)
         {
             var menuItem = (MenuItem)sender!;
-            if (_apiService == null) { menuItem.IsChecked = !menuItem.IsChecked; return; }
+            if (_apiService == null)
+            {
+                menuItem.IsChecked = !menuItem.IsChecked;
+                return;
+            }
 
             var configs = await _apiService.GetConfigsAsync();
-            if (configs == null) { menuItem.IsChecked = !menuItem.IsChecked; return; } 
+            if (configs == null)
+            {
+                menuItem.IsChecked = !menuItem.IsChecked;
+                return;
+            }
 
             var expectedProxy = GetProxyAddress(configs);
-            if (expectedProxy == null) 
+            if (expectedProxy == null)
             {
                 MessageBox.Show("Proxy port not configured in Clash.", "Error");
                 menuItem.IsChecked = false;
-                return; 
+                return;
             }
 
-            if (menuItem.IsChecked) { SystemProxyManager.SetProxy(expectedProxy); }
-            else { SystemProxyManager.DisableProxy(); }
+            if (menuItem.IsChecked)
+            {
+                SystemProxyManager.SetProxy(expectedProxy);
+            }
+            else
+            {
+                SystemProxyManager.DisableProxy();
+            }
         }
 
         private void UpdateTunModeState(JsonObject configs)
@@ -307,17 +320,21 @@ namespace ClashXW
         private async void OnTunModeClicked(object? sender, RoutedEventArgs e)
         {
             var menuItem = (MenuItem)sender!;
-            if (_apiService == null) { menuItem.IsChecked = !menuItem.IsChecked; return; }
+            if (_apiService == null) return;
+
+            var targetState = menuItem.IsChecked;
 
             try
             {
-                await _apiService.UpdateTunModeAsync(menuItem.IsChecked);
+                await _apiService.UpdateTunModeAsync(targetState);
             }
             catch (Exception ex)
             {
                 MessageBox.Show($"Failed to set TUN mode: {ex.Message}", "Error");
-                menuItem.IsChecked = !menuItem.IsChecked; // Revert on failure
             }
+
+            // Close context menu - state will refresh on next open
+            NotifyIcon.ContextMenu.IsOpen = false;
         }
 
         private void OnOpenDashboard(object? sender, RoutedEventArgs e)
