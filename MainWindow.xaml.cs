@@ -145,7 +145,7 @@ namespace ClashXW
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Failed to switch configuration: {ex.Message}", "Error");
+                NotifyIcon.ShowBalloonTip("Error", $"Failed to switch configuration: {ex.Message}", Hardcodet.Wpf.TaskbarNotification.BalloonIcon.Error);
             }
         }
 
@@ -182,7 +182,7 @@ namespace ClashXW
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Failed to set mode: {ex.Message}", "Error");
+                NotifyIcon.ShowBalloonTip("Error", $"Failed to set mode: {ex.Message}", Hardcodet.Wpf.TaskbarNotification.BalloonIcon.Error);
             }
 
             // Close context menu - state will refresh on next open
@@ -246,7 +246,7 @@ namespace ClashXW
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Failed to set proxy node: {ex.Message}", "Error");
+                NotifyIcon.ShowBalloonTip("Error", $"Failed to set proxy node: {ex.Message}", Hardcodet.Wpf.TaskbarNotification.BalloonIcon.Error);
             }
 
             // Close context menu - state will refresh on next open
@@ -292,7 +292,7 @@ namespace ClashXW
             var expectedProxy = GetProxyAddress(configs);
             if (expectedProxy == null)
             {
-                MessageBox.Show("Proxy port not configured in Clash.", "Error");
+                NotifyIcon.ShowBalloonTip("Error", "Proxy port not configured in Clash.", Hardcodet.Wpf.TaskbarNotification.BalloonIcon.Error);
                 menuItem.IsChecked = false;
                 return;
             }
@@ -330,7 +330,7 @@ namespace ClashXW
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Failed to set TUN mode: {ex.Message}", "Error");
+                NotifyIcon.ShowBalloonTip("Error", $"Failed to set TUN mode: {ex.Message}", Hardcodet.Wpf.TaskbarNotification.BalloonIcon.Error);
             }
 
             // Close context menu - state will refresh on next open
@@ -342,14 +342,14 @@ namespace ClashXW
             var apiDetails = ConfigManager.ReadApiDetails(_currentConfigPath);
             if (apiDetails == null || string.IsNullOrEmpty(apiDetails.DashboardUrl)) return;
             try { Process.Start(new ProcessStartInfo(apiDetails.DashboardUrl) { UseShellExecute = true }); }
-            catch (Exception ex) { MessageBox.Show($"Failed to open dashboard:\n{ex.Message}", "Error"); }
+            catch (Exception ex) { NotifyIcon.ShowBalloonTip("Error", $"Failed to open dashboard: {ex.Message}", Hardcodet.Wpf.TaskbarNotification.BalloonIcon.Error); }
         }
 
         private void OnEditConfig(object? sender, RoutedEventArgs e)
         {
-            if (string.IsNullOrEmpty(_currentConfigPath) || !File.Exists(_currentConfigPath)) { MessageBox.Show($"Config file not found at: {_currentConfigPath}", "Error"); return; }
+            if (string.IsNullOrEmpty(_currentConfigPath) || !File.Exists(_currentConfigPath)) { NotifyIcon.ShowBalloonTip("Error", $"Config file not found at: {_currentConfigPath}", Hardcodet.Wpf.TaskbarNotification.BalloonIcon.Error); return; }
             try { Process.Start(new ProcessStartInfo("notepad.exe", _currentConfigPath) { UseShellExecute = true }); }
-            catch (Exception ex) { MessageBox.Show($"Failed to open config file:\n{ex.Message}", "Error"); }
+            catch (Exception ex) { NotifyIcon.ShowBalloonTip("Error", $"Failed to open config file: {ex.Message}", Hardcodet.Wpf.TaskbarNotification.BalloonIcon.Error); }
         }
 
         private void OnOpenConfigFolder(object? sender, RoutedEventArgs e)
@@ -363,7 +363,7 @@ namespace ClashXW
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Failed to open config folder:\n{ex.Message}", "Error");
+                NotifyIcon.ShowBalloonTip("Error", $"Failed to open config folder: {ex.Message}", Hardcodet.Wpf.TaskbarNotification.BalloonIcon.Error);
             }
         }
 
