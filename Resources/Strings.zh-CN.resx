@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Mode" xml:space="preserve">
+    <value>模式</value>
+  </data>
+  <data name="Rule" xml:space="preserve">
+    <value>规则</value>
+  </data>
+  <data name="Direct" xml:space="preserve">
+    <value>直连</value>
+  </data>
+  <data name="Global" xml:space="preserve">
+    <value>全局</value>
+  </data>
+  <data name="SetSystemProxy" xml:space="preserve">
+    <value>设置系统代理</value>
+  </data>
+  <data name="TunMode" xml:space="preserve">
+    <value>TUN 模式</value>
+  </data>
+  <data name="OpenDashboard" xml:space="preserve">
+    <value>打开控制面板</value>
+  </data>
+  <data name="EditConfig" xml:space="preserve">
+    <value>编辑配置</value>
+  </data>
+  <data name="OpenConfigFolder" xml:space="preserve">
+    <value>打开配置文件夹</value>
+  </data>
+  <data name="Configuration" xml:space="preserve">
+    <value>配置</value>
+  </data>
+  <data name="Language" xml:space="preserve">
+    <value>语言</value>
+  </data>
+  <data name="Exit" xml:space="preserve">
+    <value>退出</value>
+  </data>
+  <data name="Error" xml:space="preserve">
+    <value>错误</value>
+  </data>
+  <data name="ExecutableNotFound" xml:space="preserve">
+    <value>未找到可执行文件：{0}</value>
+  </data>
+  <data name="FailedToStartClash" xml:space="preserve">
+    <value>启动 Clash 进程失败：
+{0}</value>
+  </data>
+  <data name="FailedToReadApiDetails" xml:space="preserve">
+    <value>无法从 {0} 读取 API 详细信息。API 功能将被禁用。</value>
+  </data>
+  <data name="ConfigError" xml:space="preserve">
+    <value>配置错误</value>
+  </data>
+  <data name="FailedToConnectToClash" xml:space="preserve">
+    <value>无法连接到 Clash 核心</value>
+  </data>
+  <data name="FailedToSwitchConfig" xml:space="preserve">
+    <value>切换配置失败：{0}</value>
+  </data>
+  <data name="ModeFormat" xml:space="preserve">
+    <value>模式 ({0})</value>
+  </data>
+  <data name="FailedToSetMode" xml:space="preserve">
+    <value>设置模式失败：{0}</value>
+  </data>
+  <data name="ProxyNotConfigured" xml:space="preserve">
+    <value>Clash 中未配置代理端口。</value>
+  </data>
+  <data name="FailedToSetTunMode" xml:space="preserve">
+    <value>设置 TUN 模式失败：{0}</value>
+  </data>
+  <data name="FailedToOpenDashboard" xml:space="preserve">
+    <value>打开控制面板失败：
+{0}</value>
+  </data>
+  <data name="ConfigFileNotFound" xml:space="preserve">
+    <value>未找到配置文件：{0}</value>
+  </data>
+  <data name="FailedToOpenConfigFile" xml:space="preserve">
+    <value>打开配置文件失败：
+{0}</value>
+  </data>
+  <data name="FailedToOpenConfigFolder" xml:space="preserve">
+    <value>打开配置文件夹失败：
+{0}</value>
+  </data>
+  <data name="FailedToSetProxyNode" xml:space="preserve">
+    <value>设置代理节点失败：{0}</value>
+  </data>
+</root>

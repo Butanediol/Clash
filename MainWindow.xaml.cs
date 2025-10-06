@@ -29,6 +29,9 @@ namespace ClashXW
         public MainWindow()
         {
             InitializeComponent();
+            LocalizationManager.Initialize();
+            LocalizationManager.LanguageChanged += OnLanguageChanged;
+            
             ConfigManager.EnsureDefaultConfigExists();
 
             _executablePath = Path.Combine(AppContext.BaseDirectory, "ClashAssets", "clash.exe");
@@ -38,13 +41,14 @@ namespace ClashXW
             InitializeApiService();
 
             NotifyIcon.ContextMenu.Opened += OnContextMenuOpening;
+            UpdateLanguageMenu();
         }
 
         private void StartClashCore()
         {
             if (string.IsNullOrEmpty(_executablePath) || !File.Exists(_executablePath))
             {
-                MessageBox.Show($"Executable not found at: {_executablePath}", "Error");
+                MessageBox.Show(LocalizationManager.GetString("ExecutableNotFound", _executablePath), LocalizationManager.GetString("Error"));
                 Application.Current.Shutdown();
                 return;
             }
@@ -56,7 +60,7 @@ namespace ClashXW
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Failed to start Clash process:\n{ex.Message}", "Error");
+                MessageBox.Show(LocalizationManager.GetString("FailedToStartClash", ex.Message), LocalizationManager.GetString("Error"));
                 Application.Current.Shutdown();
             }
         }
@@ -76,7 +80,7 @@ namespace ClashXW
             else
             {
                 _apiService = null;
-                MessageBox.Show($"Failed to read API details from {_currentConfigPath}. API features will be disabled.", "Config Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(LocalizationManager.GetString("FailedToReadApiDetails", _currentConfigPath), LocalizationManager.GetString("ConfigError"), MessageBoxButton.OK, MessageBoxImage.Warning);
             }
         }
 
@@ -100,7 +104,7 @@ namespace ClashXW
                 Debug.WriteLine($"Failed to update state from API: {ex.Message}");
                 foreach (var item in _proxyGroupMenus) { NotifyIcon.ContextMenu.Items.Remove(item); }
                 _proxyGroupMenus.Clear();
-                _connectionErrorMenuItem = new MenuItem { Header = "Failed to connect to Clash core", IsEnabled = false };
+                _connectionErrorMenuItem = new MenuItem { Header = LocalizationManager.GetString("FailedToConnectToClash"), IsEnabled = false };
                 NotifyIcon.ContextMenu.Items.Insert(3, _connectionErrorMenuItem);
             }
         }
@@ -136,7 +140,7 @@ namespace ClashXW
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Failed to switch configuration: {ex.Message}", "Error");
+                MessageBox.Show(LocalizationManager.GetString("FailedToSwitchConfig", ex.Message), LocalizationManager.GetString("Error"));
             }
         }
 
@@ -159,7 +163,7 @@ namespace ClashXW
             RuleModeItem.IsChecked = mode.Equals("rule", StringComparison.OrdinalIgnoreCase);
             DirectModeItem.IsChecked = mode.Equals("direct", StringComparison.OrdinalIgnoreCase);
             GlobalModeItem.IsChecked = mode.Equals("global", StringComparison.OrdinalIgnoreCase);
-            ModeMenu.Header = $"Mode ({mode})";
+            ModeMenu.Header = LocalizationManager.GetString("ModeFormat", mode);
         }
 
         private async void OnModeSelected(object? sender, RoutedEventArgs e)
@@ -169,9 +173,9 @@ namespace ClashXW
             try
             {
                 await _apiService.UpdateModeAsync(newMode);
-                ModeMenu.Header = $"Mode ({newMode})";
+                ModeMenu.Header = LocalizationManager.GetString("ModeFormat", newMode);
             }
-            catch (Exception ex) { MessageBox.Show($"Failed to set mode: {ex.Message}", "Error"); }
+            catch (Exception ex) { MessageBox.Show(LocalizationManager.GetString("FailedToSetMode", ex.Message), LocalizationManager.GetString("Error")); }
         }
 
         private async Task UpdateProxyGroupsAsync()
@@ -242,7 +246,7 @@ namespace ClashXW
                     }
                 }
             }
-            catch (Exception ex) { MessageBox.Show($"Failed to set proxy node: {ex.Message}", "Error"); }
+            catch (Exception ex) { MessageBox.Show(LocalizationManager.GetString("FailedToSetProxyNode", ex.Message), LocalizationManager.GetString("Error")); }
         }
 
         private string? GetProxyAddress(JsonObject configs)
@@ -276,7 +280,7 @@ namespace ClashXW
             var expectedProxy = GetProxyAddress(configs);
             if (expectedProxy == null) 
             {
-                MessageBox.Show("Proxy port not configured in Clash.", "Error");
+                MessageBox.Show(LocalizationManager.GetString("ProxyNotConfigured"), LocalizationManager.GetString("Error"));
                 menuItem.IsChecked = false;
                 return; 
             }
@@ -306,7 +310,7 @@ namespace ClashXW
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Failed to set TUN mode: {ex.Message}", "Error");
+                MessageBox.Show(LocalizationManager.GetString("FailedToSetTunMode", ex.Message), LocalizationManager.GetString("Error"));
                 menuItem.IsChecked = !menuItem.IsChecked; // Revert on failure
             }
         }
@@ -316,14 +320,14 @@ namespace ClashXW
             var apiDetails = ConfigManager.ReadApiDetails(_currentConfigPath);
             if (apiDetails == null || string.IsNullOrEmpty(apiDetails.DashboardUrl)) return;
             try { Process.Start(new ProcessStartInfo(apiDetails.DashboardUrl) { UseShellExecute = true }); }
-            catch (Exception ex) { MessageBox.Show($"Failed to open dashboard:\n{ex.Message}", "Error"); }
+            catch (Exception ex) { MessageBox.Show(LocalizationManager.GetString("FailedToOpenDashboard", ex.Message), LocalizationManager.GetString("Error")); }
         }
 
         private void OnEditConfig(object? sender, RoutedEventArgs e)
         {
-            if (string.IsNullOrEmpty(_currentConfigPath) || !File.Exists(_currentConfigPath)) { MessageBox.Show($"Config file not found at: {_currentConfigPath}", "Error"); return; }
+            if (string.IsNullOrEmpty(_currentConfigPath) || !File.Exists(_currentConfigPath)) { MessageBox.Show(LocalizationManager.GetString("ConfigFileNotFound", _currentConfigPath), LocalizationManager.GetString("Error")); return; }
             try { Process.Start(new ProcessStartInfo("notepad.exe", _currentConfigPath) { UseShellExecute = true }); }
-            catch (Exception ex) { MessageBox.Show($"Failed to open config file:\n{ex.Message}", "Error"); }
+            catch (Exception ex) { MessageBox.Show(LocalizationManager.GetString("FailedToOpenConfigFile", ex.Message), LocalizationManager.GetString("Error")); }
         }
 
         private void OnOpenConfigFolder(object? sender, RoutedEventArgs e)
@@ -337,7 +341,7 @@ namespace ClashXW
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Failed to open config folder:\n{ex.Message}", "Error");
+                MessageBox.Show(LocalizationManager.GetString("FailedToOpenConfigFolder", ex.Message), LocalizationManager.GetString("Error"));
             }
         }
 
@@ -347,6 +351,67 @@ namespace ClashXW
             if (_clashProcess != null && !_clashProcess.HasExited) { _clashProcess.Kill(); }
             NotifyIcon.Dispose();
             Application.Current.Shutdown();
+        }
+
+        private void UpdateLanguageMenu()
+        {
+            LanguageMenu.Items.Clear();
+            
+            var languages = new Dictionary<string, string>
+            {
+                { "en", "English" },
+                { "zh-CN", "简体中文" }
+            };
+
+            foreach (var lang in languages)
+            {
+                var menuItem = new MenuItem
+                {
+                    Header = lang.Value,
+                    Tag = lang.Key,
+                    IsChecked = LocalizationManager.CurrentLanguage.Equals(lang.Key, StringComparison.OrdinalIgnoreCase)
+                };
+                menuItem.Click += OnLanguageSelected;
+                LanguageMenu.Items.Add(menuItem);
+            }
+        }
+
+        private void OnLanguageSelected(object? sender, RoutedEventArgs e)
+        {
+            if (sender is not MenuItem { Tag: string language }) return;
+            LocalizationManager.SetLanguage(language);
+        }
+
+        private void OnLanguageChanged(object? sender, EventArgs e)
+        {
+            // Update language menu checkmarks
+            UpdateLanguageMenu();
+            
+            // Update dynamic UI elements that don't use static bindings
+            if (_apiService != null)
+            {
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        var configs = await _apiService.GetConfigsAsync();
+                        if (configs != null)
+                        {
+                            Dispatcher.Invoke(() =>
+                            {
+                                UpdateModeUI(configs);
+                            });
+                        }
+                    }
+                    catch { }
+                });
+            }
+            
+            // Update connection error message if it's displayed
+            if (_connectionErrorMenuItem != null)
+            {
+                _connectionErrorMenuItem.Header = LocalizationManager.GetString("FailedToConnectToClash");
+            }
         }
 
         private void OnContextMenuKeyDown(object sender, KeyEventArgs e)

@@ -2,6 +2,7 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:tb="http://www.hardcodet.net/taskbar"
+        xmlns:res="clr-namespace:ClashXW.Resources"
         Title="MainWindow" Height="450" Width="800"
         WindowStyle="None" ShowInTaskbar="False" ResizeMode="NoResize"
         Loaded="MainWindow_Loaded">
@@ -12,23 +13,24 @@
             ToolTipText="ClashXW">
             <tb:TaskbarIcon.ContextMenu>
                 <ContextMenu KeyDown="OnContextMenuKeyDown">
-                    <MenuItem Header="Mode" Name="ModeMenu">
-                        <MenuItem Header="Rule" Name="RuleModeItem" Tag="rule" Click="OnModeSelected" IsCheckable="True" InputGestureText="Alt+R"/>
-                        <MenuItem Header="Direct" Name="DirectModeItem" Tag="direct" Click="OnModeSelected" IsCheckable="True" InputGestureText="Alt+D"/>
-                        <MenuItem Header="Global" Name="GlobalModeItem" Tag="global" Click="OnModeSelected" IsCheckable="True" InputGestureText="Alt+G"/>
+                    <MenuItem Header="{x:Static res:Strings.Mode}" Name="ModeMenu">
+                        <MenuItem Header="{x:Static res:Strings.Rule}" Name="RuleModeItem" Tag="rule" Click="OnModeSelected" IsCheckable="True" InputGestureText="Alt+R"/>
+                        <MenuItem Header="{x:Static res:Strings.Direct}" Name="DirectModeItem" Tag="direct" Click="OnModeSelected" IsCheckable="True" InputGestureText="Alt+D"/>
+                        <MenuItem Header="{x:Static res:Strings.Global}" Name="GlobalModeItem" Tag="global" Click="OnModeSelected" IsCheckable="True" InputGestureText="Alt+G"/>
                     </MenuItem>
                     <Separator />
                     <!-- Proxy group menus will be inserted here -->
                     <Separator />
-                    <MenuItem Header="Set System Proxy" Name="SystemProxyMenuItem" IsCheckable="True" Click="OnSystemProxyClicked" InputGestureText="Ctrl+S"/>
-                    <MenuItem Header="TUN Mode" Name="TunModeMenuItem" IsCheckable="True" Click="OnTunModeClicked" InputGestureText="Ctrl+E"/>
+                    <MenuItem Header="{x:Static res:Strings.SetSystemProxy}" Name="SystemProxyMenuItem" IsCheckable="True" Click="OnSystemProxyClicked" InputGestureText="Ctrl+S"/>
+                    <MenuItem Header="{x:Static res:Strings.TunMode}" Name="TunModeMenuItem" IsCheckable="True" Click="OnTunModeClicked" InputGestureText="Ctrl+E"/>
                     <Separator />
-                    <MenuItem Header="Open Dashboard" Click="OnOpenDashboard" InputGestureText="Ctrl+D"/>
-                    <MenuItem Header="Edit Config" Click="OnEditConfig"/>
-                    <MenuItem Header="Open Config Folder" Click="OnOpenConfigFolder" InputGestureText="Ctrl+O"/>
-                    <MenuItem Header="Configuration" Name="ConfigMenu" />
+                    <MenuItem Header="{x:Static res:Strings.OpenDashboard}" Click="OnOpenDashboard" InputGestureText="Ctrl+D"/>
+                    <MenuItem Header="{x:Static res:Strings.EditConfig}" Click="OnEditConfig"/>
+                    <MenuItem Header="{x:Static res:Strings.OpenConfigFolder}" Click="OnOpenConfigFolder" InputGestureText="Ctrl+O"/>
+                    <MenuItem Header="{x:Static res:Strings.Configuration}" Name="ConfigMenu" />
+                    <MenuItem Header="{x:Static res:Strings.Language}" Name="LanguageMenu" />
                     <Separator />
-                    <MenuItem Header="Exit" Click="OnExit"/>
+                    <MenuItem Header="{x:Static res:Strings.Exit}" Click="OnExit"/>
                 </ContextMenu>
             </tb:TaskbarIcon.ContextMenu>
         </tb:TaskbarIcon>
