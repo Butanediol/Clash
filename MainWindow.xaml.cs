@@ -363,6 +363,25 @@ namespace ClashXW
             catch (Exception ex) { NotifyIcon.ShowBalloonTip("Error", $"Failed to open dashboard: {ex.Message}", Hardcodet.Wpf.TaskbarNotification.BalloonIcon.Error); }
         }
 
+        private async void OnReloadConfig(object? sender, RoutedEventArgs e)
+        {
+            if (_apiService == null) return;
+            if (string.IsNullOrEmpty(_currentConfigPath)) return;
+
+            // Close context menu immediately
+            NotifyIcon.ContextMenu.IsOpen = false;
+
+            try
+            {
+                await _apiService.ReloadConfigAsync(_currentConfigPath);
+                NotifyIcon.ShowBalloonTip("Success", "Configuration reloaded", Hardcodet.Wpf.TaskbarNotification.BalloonIcon.Info);
+            }
+            catch (Exception ex)
+            {
+                NotifyIcon.ShowBalloonTip("Error", $"Failed to reload configuration: {ex.Message}", Hardcodet.Wpf.TaskbarNotification.BalloonIcon.Error);
+            }
+        }
+
         private void OnEditConfig(object? sender, RoutedEventArgs e)
         {
             if (string.IsNullOrEmpty(_currentConfigPath) || !File.Exists(_currentConfigPath)) { NotifyIcon.ShowBalloonTip("Error", $"Config file not found at: {_currentConfigPath}", Hardcodet.Wpf.TaskbarNotification.BalloonIcon.Error); return; }
@@ -401,6 +420,9 @@ namespace ClashXW
                 {
                     case Key.O:
                         OnOpenConfigFolder(sender, e);
+                        break;
+                    case Key.R:
+                        OnReloadConfig(sender, e);
                         break;
                     case Key.S:
                         SystemProxyMenuItem.IsChecked = !SystemProxyMenuItem.IsChecked;

@@ -26,6 +26,7 @@
                     <MenuItem Header="Open Dashboard" Click="OnOpenDashboard" InputGestureText="Ctrl+D"/>
                     <MenuItem Header="Configuration" Name="ConfigMenu">
                         <Separator />
+                        <MenuItem Header="Reload Config" Click="OnReloadConfig" InputGestureText="Ctrl+R"/>
                         <MenuItem Header="Edit Config" Click="OnEditConfig"/>
                         <MenuItem Header="Open Config Folder" Click="OnOpenConfigFolder" InputGestureText="Ctrl+O"/>
                     </MenuItem>
