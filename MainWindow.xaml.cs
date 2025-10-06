@@ -193,7 +193,7 @@ namespace ClashXW
         {
             if (_apiService == null) return;
 
-            foreach (var item in _proxyGroupMenus) { NotifyIcon.ContextMenu.Items.Remove(item); }
+            _proxyGroupMenus.ForEach(item => NotifyIcon.ContextMenu.Items.Remove(item));
             _proxyGroupMenus.Clear();
 
             try
@@ -201,37 +201,52 @@ namespace ClashXW
                 var response = await _apiService.GetProxiesAsync();
                 if (response?.Proxies == null) return;
 
-                var orderedGroups = new List<ProxyGroup>();
-                if (response.Proxies.TryGetValue("GLOBAL", out var globalGroup) && globalGroup.All != null)
-                {
-                    foreach (var groupName in globalGroup.All) { if (response.Proxies.TryGetValue(groupName, out var pg)) { orderedGroups.Add(pg); } }
-                }
-                else { orderedGroups.AddRange(response.Proxies.Values); }
+                var orderedGroups = response.Proxies.TryGetValue("GLOBAL", out var globalGroup) && globalGroup.All != null
+                    ? globalGroup.All
+                        .Select(groupName => response.Proxies.TryGetValue(groupName, out var pg) ? pg : null)
+                        .Where(pg => pg != null)
+                        .Cast<ProxyGroup>()
+                        .ToList()
+                    : response.Proxies.Values.ToList();
 
-                var selectorGroups = orderedGroups.Where(p => p.Type.Equals("Selector", StringComparison.OrdinalIgnoreCase)).ToList();
+                var selectorGroups = orderedGroups
+                    .Where(p => p.Type.Equals("Selector", StringComparison.OrdinalIgnoreCase))
+                    .Select(group => CreateProxyGroupMenuItem(group))
+                    .ToList();
 
-                foreach (var group in selectorGroups)
-                {
-                    var groupMenu = new MenuItem { Header = $"{group.Name} ({group.Now})" };
-
-                    foreach (var nodeName in group.All)
-                    {
-                        var nodeItem = new MenuItem
-                        {
-                            Header = nodeName,
-                            Tag = new Tuple<string, string>(group.Name, nodeName),
-                            IsChecked = nodeName.Equals(group.Now, StringComparison.OrdinalIgnoreCase)
-                        };
-                        nodeItem.Click += OnProxyNodeSelected;
-                        groupMenu.Items.Add(nodeItem);
-                    }
-
-                    _proxyGroupMenus.Add(groupMenu);
-                }
-
-                for (int i = 0; i < _proxyGroupMenus.Count; i++) { NotifyIcon.ContextMenu.Items.Insert(2 + i, _proxyGroupMenus[i]); }
+                _proxyGroupMenus.AddRange(selectorGroups);
+                
+                selectorGroups
+                    .Select((menu, index) => (menu, index))
+                    .ToList()
+                    .ForEach(pair => NotifyIcon.ContextMenu.Items.Insert(2 + pair.index, pair.menu));
             }
             catch (Exception ex) { Debug.WriteLine($"Failed to get proxy groups: {ex.Message}"); }
+        }
+
+        private MenuItem CreateProxyGroupMenuItem(ProxyGroup group)
+        {
+            var groupMenu = new MenuItem { Header = $"{group.Name} ({group.Now})" };
+            
+            var nodeItems = group.All
+                .Select(nodeName => CreateProxyNodeMenuItem(group.Name, nodeName, group.Now))
+                .ToList();
+            
+            nodeItems.ForEach(item => groupMenu.Items.Add(item));
+            
+            return groupMenu;
+        }
+
+        private MenuItem CreateProxyNodeMenuItem(string groupName, string nodeName, string currentNode)
+        {
+            var nodeItem = new MenuItem
+            {
+                Header = nodeName,
+                Tag = new Tuple<string, string>(groupName, nodeName),
+                IsChecked = nodeName.Equals(currentNode, StringComparison.OrdinalIgnoreCase)
+            };
+            nodeItem.Click += OnProxyNodeSelected;
+            return nodeItem;
         }
 
         private async void OnProxyNodeSelected(object? sender, RoutedEventArgs e)
