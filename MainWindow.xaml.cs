@@ -136,6 +136,9 @@ namespace ClashXW
             if (sender is not MenuItem { Tag: string newPath }) return;
             if (_apiService == null) return;
 
+            // Close context menu immediately
+            NotifyIcon.ContextMenu.IsOpen = false;
+
             try
             {
                 await _apiService.ReloadConfigAsync(newPath);
@@ -176,6 +179,9 @@ namespace ClashXW
             if (sender is not MenuItem { Tag: string newMode }) return;
             if (_apiService == null) return;
 
+            // Close context menu immediately
+            NotifyIcon.ContextMenu.IsOpen = false;
+
             try
             {
                 await _apiService.UpdateModeAsync(newMode);
@@ -184,9 +190,6 @@ namespace ClashXW
             {
                 NotifyIcon.ShowBalloonTip("Error", $"Failed to set mode: {ex.Message}", Hardcodet.Wpf.TaskbarNotification.BalloonIcon.Error);
             }
-
-            // Close context menu - state will refresh on next open
-            NotifyIcon.ContextMenu.IsOpen = false;
         }
 
         private async Task UpdateProxyGroupsAsync()
@@ -255,6 +258,9 @@ namespace ClashXW
             if (_apiService == null) return;
             var (groupName, nodeName) = selection;
 
+            // Close context menu immediately
+            NotifyIcon.ContextMenu.IsOpen = false;
+
             try
             {
                 await _apiService.SelectProxyNodeAsync(groupName, nodeName);
@@ -263,9 +269,6 @@ namespace ClashXW
             {
                 NotifyIcon.ShowBalloonTip("Error", $"Failed to set proxy node: {ex.Message}", Hardcodet.Wpf.TaskbarNotification.BalloonIcon.Error);
             }
-
-            // Close context menu - state will refresh on next open
-            NotifyIcon.ContextMenu.IsOpen = false;
         }
 
         private string? GetProxyAddress(JsonObject configs)
@@ -339,6 +342,9 @@ namespace ClashXW
 
             var targetState = menuItem.IsChecked;
 
+            // Close context menu immediately
+            NotifyIcon.ContextMenu.IsOpen = false;
+
             try
             {
                 await _apiService.UpdateTunModeAsync(targetState);
@@ -347,9 +353,6 @@ namespace ClashXW
             {
                 NotifyIcon.ShowBalloonTip("Error", $"Failed to set TUN mode: {ex.Message}", Hardcodet.Wpf.TaskbarNotification.BalloonIcon.Error);
             }
-
-            // Close context menu - state will refresh on next open
-            NotifyIcon.ContextMenu.IsOpen = false;
         }
 
         private void OnOpenDashboard(object? sender, RoutedEventArgs e)
