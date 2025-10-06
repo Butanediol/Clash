@@ -11,6 +11,8 @@ on:
 jobs:
   build:
     runs-on: windows-latest
+    permissions:
+      contents: write
 
     steps:
     - name: Checkout repository
@@ -24,8 +26,76 @@ jobs:
     - name: Publish
       run: dotnet publish --configuration Release
 
+    - name: Fetch Mihomo Release Info
+      id: mihomo_release
+      shell: pwsh
+      run: |
+        # Fetch latest release info
+        $releaseInfo = Invoke-RestMethod -Uri "https://api.github.com/repos/MetaCubeX/mihomo/releases/latest"
+        
+        # Get version.txt URL
+        $versionAsset = $releaseInfo.assets | Where-Object { $_.name -eq "version.txt" }
+        $versionUrl = $versionAsset.browser_download_url
+        
+        # Fetch and clean version string
+        $versionResponse = Invoke-WebRequest -Uri $versionUrl
+        $version = [System.Text.Encoding]::UTF8.GetString($versionResponse.Content).Trim()
+        Write-Output "version=$version" >> $env:GITHUB_OUTPUT
+        
+        # Get binary URL
+        $binaryName = "mihomo-windows-amd64-v3-$version.zip"
+        $binaryAsset = $releaseInfo.assets | Where-Object { $_.name -eq $binaryName }
+        $binaryUrl = $binaryAsset.browser_download_url
+        Write-Output "binary_url=$binaryUrl" >> $env:GITHUB_OUTPUT
+        Write-Output "binary_name=$binaryName" >> $env:GITHUB_OUTPUT
+
+    - name: Download and Extract Mihomo
+      shell: pwsh
+      run: |
+        $version = "${{ steps.mihomo_release.outputs.version }}"
+        $binaryUrl = "${{ steps.mihomo_release.outputs.binary_url }}"
+        $binaryName = "${{ steps.mihomo_release.outputs.binary_name }}"
+        
+        # Download the zip file
+        Invoke-WebRequest -Uri $binaryUrl -OutFile "mihomo.zip"
+        
+        # Extract the zip file
+        Expand-Archive -Path "mihomo.zip" -DestinationPath "mihomo_temp" -Force
+        
+        # Create ClashAssets directory
+        New-Item -ItemType Directory -Force -Path "ClashAssets"
+        
+        # The executable inside the zip is named mihomo-windows-amd64-v3.exe (without version)
+        Move-Item -Path "mihomo_temp\mihomo-windows-amd64-v3.exe" -Destination "ClashAssets\clash.exe" -Force
+
+    - name: Copy ClashAssets to Publish Directory
+      shell: pwsh
+      run: |
+        Copy-Item -Path "ClashAssets" -Destination "bin/Release/net8.0-windows/win-x64/publish/" -Recurse -Force
+
     - name: Upload Artifact
       uses: actions/upload-artifact@v4
       with:
         name: ClashXW-windows
         path: bin/Release/net8.0-windows/win-x64/publish/
+
+    - name: Create Release Archive
+      if: github.event_name == 'release'
+      shell: pwsh
+      run: |
+        # Create a temporary directory for release files (excluding PDB)
+        New-Item -ItemType Directory -Force -Path "release_temp"
+        
+        # Copy all files except .pdb files
+        Copy-Item -Path "bin/Release/net8.0-windows/win-x64/publish/*" -Destination "release_temp/" -Recurse -Force -Exclude "*.pdb"
+        
+        # Create zip archive
+        Compress-Archive -Path "release_temp/*" -DestinationPath "ClashXW-windows.zip" -Force
+
+    - name: Upload Release Assets
+      if: github.event_name == 'release'
+      uses: softprops/action-gh-release@v2
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        files: ./ClashXW-windows.zip
