@@ -2,7 +2,7 @@ using Microsoft.Win32;
 using System;
 using System.Runtime.InteropServices;
 
-namespace ClashXW
+namespace ClashXW.Services
 {
     public static class SystemProxyManager
     {

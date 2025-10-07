@@ -1,15 +1,13 @@
-
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
 using YamlDotNet.Serialization;
+using ClashXW.Models;
 
-namespace ClashXW
+namespace ClashXW.Services
 {
-    public record ApiDetails(string BaseUrl, string? Secret, string DashboardUrl);
-
     public static class ConfigManager
     {
         public static readonly string AppDataDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "ClashXW");

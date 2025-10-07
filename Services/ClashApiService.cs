@@ -2,10 +2,10 @@ using System;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
-using System.Text.Json.Nodes;
 using System.Threading.Tasks;
+using ClashXW.Models;
 
-namespace ClashXW
+namespace ClashXW.Services
 {
     public class ClashApiService
     {
@@ -22,10 +22,10 @@ namespace ClashXW
             }
         }
 
-        public Task<JsonObject?> GetConfigsAsync()
+        public Task<ClashConfig?> GetConfigsAsync()
         {
-            if (string.IsNullOrEmpty(_apiBaseUrl)) return Task.FromResult<JsonObject?>(null);
-            return _httpClient.GetFromJsonAsync<JsonObject>($"{_apiBaseUrl}/configs");
+            if (string.IsNullOrEmpty(_apiBaseUrl)) return Task.FromResult<ClashConfig?>(null);
+            return _httpClient.GetFromJsonAsync<ClashConfig>($"{_apiBaseUrl}/configs");
         }
 
         public Task<ProxiesResponse?> GetProxiesAsync()
@@ -37,28 +37,28 @@ namespace ClashXW
         public Task UpdateModeAsync(string newMode)
         {
             if (string.IsNullOrEmpty(_apiBaseUrl)) return Task.CompletedTask;
-            var payload = new { mode = newMode };
+            var payload = new ModeUpdateRequest(newMode);
             return _httpClient.PatchAsJsonAsync($"{_apiBaseUrl}/configs", payload);
         }
 
         public Task UpdateTunModeAsync(bool isEnabled)
         {
             if (string.IsNullOrEmpty(_apiBaseUrl)) return Task.CompletedTask;
-            var payload = new { tun = new { enable = isEnabled } };
+            var payload = new TunUpdateRequest(new TunEnableRequest(isEnabled));
             return _httpClient.PatchAsJsonAsync($"{_apiBaseUrl}/configs", payload);
         }
 
         public Task SelectProxyNodeAsync(string groupName, string nodeName)
         {
             if (string.IsNullOrEmpty(_apiBaseUrl)) return Task.CompletedTask;
-            var payload = new { name = nodeName };
+            var payload = new ProxySelectionRequest(nodeName);
             return _httpClient.PutAsJsonAsync($"{_apiBaseUrl}/proxies/{Uri.EscapeDataString(groupName)}", payload);
         }
 
         public Task ReloadConfigAsync(string configPath)
         {
             if (string.IsNullOrEmpty(_apiBaseUrl)) return Task.CompletedTask;
-            var payload = new { path = configPath };
+            var payload = new ConfigReloadRequest(configPath);
             return _httpClient.PutAsJsonAsync($"{_apiBaseUrl}/configs?force=true", payload);
         }
     }

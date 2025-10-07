@@ -1,62 +1,60 @@
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Text.Json.Nodes;
-using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using ClashXW.Models;
+using ClashXW.Services;
 
 namespace ClashXW
 {
-    public record ProxyGroup(string Name, string Type, string Now, [property: JsonPropertyName("all")] IReadOnlyList<string> All);
-    public record ProxiesResponse([property: JsonPropertyName("proxies")] Dictionary<string, ProxyGroup> Proxies);
-
     public partial class MainWindow : Window
     {
         private ClashApiService? _apiService;
-        private Process? _clashProcess;
+        private ClashProcessService? _clashProcessService;
+        private ProxyMenuService? _proxyMenuService;
+        private ConfigMenuService? _configMenuService;
         private readonly string? _executablePath;
         private string _currentConfigPath;
 
-        private readonly List<MenuItem> _proxyGroupMenus = new List<MenuItem>();
         private MenuItem? _connectionErrorMenuItem;
 
         // Cache for menu state
-        private JsonObject? _cachedConfigs;
+        private ClashConfig? _cachedConfigs;
         private ProxiesResponse? _cachedProxies;
 
         public MainWindow()
         {
             InitializeComponent();
-            ConfigManager.EnsureDefaultConfigExists();
+            Services.ConfigManager.EnsureDefaultConfigExists();
 
             _executablePath = Path.Combine(AppContext.BaseDirectory, "ClashAssets", "clash.exe");
 
-            _currentConfigPath = ConfigManager.GetCurrentConfigPath();
+            _currentConfigPath = Services.ConfigManager.GetCurrentConfigPath();
+
+            // Initialize services
+            _clashProcessService = new ClashProcessService(_executablePath);
+            _proxyMenuService = new ProxyMenuService();
+            _configMenuService = new ConfigMenuService();
+
             StartClashCore();
             InitializeApiService();
 
             NotifyIcon.ContextMenu.Opened += OnContextMenuOpening;
+            NotifyIcon.ContextMenu.Closed += OnContextMenuClosed;
         }
 
         private void StartClashCore()
         {
-            if (string.IsNullOrEmpty(_executablePath) || !File.Exists(_executablePath))
-            {
-                MessageBox.Show($"Executable not found at: {_executablePath}", "Error");
-                Application.Current.Shutdown();
-                return;
-            }
+            if (_clashProcessService == null) return;
+
             try
             {
-                var assetsDir = Path.GetDirectoryName(_executablePath);
-                _clashProcess = new Process { StartInfo = new ProcessStartInfo { FileName = _executablePath, Arguments = $"-d \"{assetsDir}\" -f \"{_currentConfigPath}\"", UseShellExecute = false, CreateNoWindow = true } };
-                _clashProcess.Start();
+                _clashProcessService.Start(_currentConfigPath);
             }
             catch (Exception ex)
             {
@@ -72,7 +70,7 @@ namespace ClashXW
 
         private void InitializeApiService()
         {
-            var apiDetails = ConfigManager.ReadApiDetails(_currentConfigPath);
+            var apiDetails = Services.ConfigManager.ReadApiDetails(_currentConfigPath);
             if (apiDetails != null)
             {
                 _apiService = new ClashApiService(apiDetails.BaseUrl, apiDetails.Secret);
@@ -86,13 +84,10 @@ namespace ClashXW
 
         private async void OnContextMenuOpening(object? sender, RoutedEventArgs e)
         {
-            if (_connectionErrorMenuItem != null)
+            if (_configMenuService != null)
             {
-                NotifyIcon.ContextMenu.Items.Remove(_connectionErrorMenuItem);
-                _connectionErrorMenuItem = null;
+                _configMenuService.UpdateConfigsMenu(ConfigMenu, _currentConfigPath, OnConfigSelected);
             }
-
-            UpdateConfigsMenu();
             if (_apiService == null) return;
 
             // Show cached state immediately if available
@@ -100,7 +95,7 @@ namespace ClashXW
             {
                 UpdateStateFromConfigs(_cachedConfigs);
             }
-            if (_cachedProxies != null)
+            if (_cachedProxies != null && _proxyMenuService != null)
             {
                 UpdateProxyGroupsUI(_cachedProxies);
             }
@@ -120,7 +115,7 @@ namespace ClashXW
                 {
                     UpdateStateFromConfigs(_cachedConfigs);
                 }
-                if (_cachedProxies != null)
+                if (_cachedProxies != null && _proxyMenuService != null)
                 {
                     UpdateProxyGroupsUI(_cachedProxies);
                 }
@@ -128,42 +123,30 @@ namespace ClashXW
             catch (Exception ex)
             {
                 Debug.WriteLine($"Failed to update state from API: {ex.Message}");
-                foreach (var item in _proxyGroupMenus) { NotifyIcon.ContextMenu.Items.Remove(item); }
-                _proxyGroupMenus.Clear();
+                if (_proxyMenuService != null)
+                {
+                    foreach (var item in _proxyMenuService.ProxyGroupMenus)
+                    {
+                        NotifyIcon.ContextMenu.Items.Remove(item);
+                    }
+                }
                 _connectionErrorMenuItem = new MenuItem { Header = "Failed to connect to Clash core", IsEnabled = false };
                 NotifyIcon.ContextMenu.Items.Insert(3, _connectionErrorMenuItem);
             }
         }
 
-        private void UpdateConfigsMenu()
+        private void OnContextMenuClosed(object? sender, RoutedEventArgs e)
         {
-            // Remove only config items, keep separator and buttons at the end
-            var itemsToRemove = ConfigMenu.Items.OfType<MenuItem>()
-                .Where(item => item.Tag is string)
-                .ToList();
-            foreach (var item in itemsToRemove)
+            if (_connectionErrorMenuItem != null)
             {
-                ConfigMenu.Items.Remove(item);
-            }
-
-            var configs = ConfigManager.GetAvailableConfigs();
-            int insertIndex = 0;
-            foreach (var configPath in configs)
-            {
-                var menuItem = new MenuItem
-                {
-                    Header = Path.GetFileName(configPath),
-                    Tag = configPath,
-                    IsChecked = configPath.Equals(_currentConfigPath, StringComparison.OrdinalIgnoreCase)
-                };
-                menuItem.Click += OnConfigSelected;
-                ConfigMenu.Items.Insert(insertIndex++, menuItem);
+                NotifyIcon.ContextMenu.Items.Remove(_connectionErrorMenuItem);
+                _connectionErrorMenuItem = null;
             }
         }
 
-        private async void OnConfigSelected(object? sender, RoutedEventArgs e)
+
+        private async void OnConfigSelected(string newPath)
         {
-            if (sender is not MenuItem { Tag: string newPath }) return;
             if (_apiService == null) return;
 
             // Close context menu immediately
@@ -173,7 +156,7 @@ namespace ClashXW
             {
                 await _apiService.ReloadConfigAsync(newPath);
                 _currentConfigPath = newPath;
-                ConfigManager.SetCurrentConfigPath(newPath);
+                Services.ConfigManager.SetCurrentConfigPath(newPath);
                 InitializeApiService();
             }
             catch (Exception ex)
@@ -182,22 +165,22 @@ namespace ClashXW
             }
         }
 
-        private void UpdateStateFromConfigs(JsonObject configs)
+        private void UpdateStateFromConfigs(ClashConfig configs)
         {
             UpdateModeUI(configs);
             UpdateSystemProxyState(configs);
             UpdateTunModeState(configs);
         }
 
-        private void UpdateModeUI(JsonObject configs)
+        private void UpdateModeUI(ClashConfig configs)
         {
-            var mode = configs?["mode"]?.GetValue<string>();
+            var mode = configs.Mode;
             if (string.IsNullOrEmpty(mode)) return;
 
             RuleModeItem.IsChecked = mode.Equals("rule", StringComparison.OrdinalIgnoreCase);
             DirectModeItem.IsChecked = mode.Equals("direct", StringComparison.OrdinalIgnoreCase);
             GlobalModeItem.IsChecked = mode.Equals("global", StringComparison.OrdinalIgnoreCase);
-            ModeMenu.Header = $"Mode ({mode})";
+            ModeMenu.Header = $"Mode ({mode.FirstCharToUpper()})";
         }
 
         private async void OnModeSelected(object? sender, RoutedEventArgs e)
@@ -220,62 +203,28 @@ namespace ClashXW
 
         private void UpdateProxyGroupsUI(ProxiesResponse response)
         {
-            _proxyGroupMenus.ForEach(item => NotifyIcon.ContextMenu.Items.Remove(item));
-            _proxyGroupMenus.Clear();
+            if (_proxyMenuService == null) return;
 
-            if (response?.Proxies == null) return;
+            // Remove existing proxy group menus
+            foreach (var item in _proxyMenuService.ProxyGroupMenus)
+            {
+                NotifyIcon.ContextMenu.Items.Remove(item);
+            }
 
-            var orderedGroups = response.Proxies.TryGetValue("GLOBAL", out var globalGroup) && globalGroup.All != null
-                ? globalGroup.All
-                    .Select(groupName => response.Proxies.TryGetValue(groupName, out var pg) ? pg : null)
-                    .Where(pg => pg != null)
-                    .Cast<ProxyGroup>()
-                    .ToList()
-                : response.Proxies.Values.ToList();
+            _proxyMenuService.UpdateProxyGroups(response, OnProxyNodeSelected);
 
-            var selectorGroups = orderedGroups
-                .Where(p => p.Type.Equals("Selector", StringComparison.OrdinalIgnoreCase))
-                .Select(group => CreateProxyGroupMenuItem(group))
-                .ToList();
-
-            _proxyGroupMenus.AddRange(selectorGroups);
-
-            selectorGroups
+            // Add new proxy group menus
+            var proxyGroupMenus = _proxyMenuService.ProxyGroupMenus;
+            proxyGroupMenus
                 .Select((menu, index) => (menu, index))
                 .ToList()
                 .ForEach(pair => NotifyIcon.ContextMenu.Items.Insert(2 + pair.index, pair.menu));
         }
 
-        private MenuItem CreateProxyGroupMenuItem(ProxyGroup group)
-        {
-            var groupMenu = new MenuItem { Header = $"{group.Name} ({group.Now})" };
-            
-            var nodeItems = group.All
-                .Select(nodeName => CreateProxyNodeMenuItem(group.Name, nodeName, group.Now))
-                .ToList();
-            
-            nodeItems.ForEach(item => groupMenu.Items.Add(item));
-            
-            return groupMenu;
-        }
 
-        private MenuItem CreateProxyNodeMenuItem(string groupName, string nodeName, string currentNode)
+        private async void OnProxyNodeSelected(string groupName, string nodeName)
         {
-            var nodeItem = new MenuItem
-            {
-                Header = nodeName,
-                Tag = new Tuple<string, string>(groupName, nodeName),
-                IsChecked = nodeName.Equals(currentNode, StringComparison.OrdinalIgnoreCase)
-            };
-            nodeItem.Click += OnProxyNodeSelected;
-            return nodeItem;
-        }
-
-        private async void OnProxyNodeSelected(object? sender, RoutedEventArgs e)
-        {
-            if (sender is not MenuItem { Tag: Tuple<string, string> selection }) return;
             if (_apiService == null) return;
-            var (groupName, nodeName) = selection;
 
             // Close context menu immediately
             NotifyIcon.ContextMenu.IsOpen = false;
@@ -290,22 +239,22 @@ namespace ClashXW
             }
         }
 
-        private string? GetProxyAddress(JsonObject configs)
+        private string? GetProxyAddress(ClashConfig configs)
         {
-            var mixedPort = configs?["mixed-port"]?.GetValue<int>();
+            var mixedPort = configs.MixedPort;
             if (mixedPort > 0) return $"127.0.0.1:{mixedPort}";
 
-            var socksPort = configs?["socks-port"]?.GetValue<int>();
+            var socksPort = configs.SocksPort;
             if (socksPort > 0) return $"socks=127.0.0.1:{socksPort}";
 
             return null;
         }
 
-        private void UpdateSystemProxyState(JsonObject configs)
+        private void UpdateSystemProxyState(ClashConfig configs)
         {
             var expectedProxy = GetProxyAddress(configs);
             if (expectedProxy == null) { SystemProxyMenuItem.IsEnabled = false; return; }
-            
+
             SystemProxyMenuItem.IsEnabled = true;
             SystemProxyMenuItem.IsChecked = SystemProxyManager.IsProxyEnabled(expectedProxy);
         }
@@ -344,11 +293,11 @@ namespace ClashXW
             }
         }
 
-        private void UpdateTunModeState(JsonObject configs)
+        private void UpdateTunModeState(ClashConfig configs)
         {
             try
             {
-                var tunEnabled = configs?["tun"]?["enable"]?.GetValue<bool>() ?? false;
+                var tunEnabled = configs.Tun?.Enable ?? false;
                 TunModeMenuItem.IsChecked = tunEnabled;
             }
             catch { TunModeMenuItem.IsChecked = false; }
@@ -376,7 +325,7 @@ namespace ClashXW
 
         private void OnOpenDashboard(object? sender, RoutedEventArgs e)
         {
-            var apiDetails = ConfigManager.ReadApiDetails(_currentConfigPath);
+            var apiDetails = Services.ConfigManager.ReadApiDetails(_currentConfigPath);
             if (apiDetails == null || string.IsNullOrEmpty(apiDetails.DashboardUrl)) return;
             try { Process.Start(new ProcessStartInfo(apiDetails.DashboardUrl) { UseShellExecute = true }); }
             catch (Exception ex) { NotifyIcon.ShowBalloonTip("Error", $"Failed to open dashboard: {ex.Message}", Hardcodet.Wpf.TaskbarNotification.BalloonIcon.Error); }
@@ -426,7 +375,7 @@ namespace ClashXW
         private void OnExit(object? sender, RoutedEventArgs e)
         {
             if (SystemProxyMenuItem.IsChecked) { SystemProxyManager.DisableProxy(); }
-            if (_clashProcess != null && !_clashProcess.HasExited) { _clashProcess.Kill(); }
+            _clashProcessService?.Dispose();
             NotifyIcon.Dispose();
             Application.Current.Shutdown();
         }
