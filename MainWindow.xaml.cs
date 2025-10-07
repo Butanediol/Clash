@@ -211,7 +211,7 @@ namespace ClashXW
                 NotifyIcon.ContextMenu.Items.Remove(item);
             }
 
-            _proxyMenuService.UpdateProxyGroups(response, OnProxyNodeSelected);
+            _proxyMenuService.UpdateProxyGroups(response, OnProxyNodeSelected, OnTestGroupLatency);
 
             // Add new proxy group menus
             var proxyGroupMenus = _proxyMenuService.ProxyGroupMenus;
@@ -369,6 +369,64 @@ namespace ClashXW
             catch (Exception ex)
             {
                 NotifyIcon.ShowBalloonTip("Error", $"Failed to open config folder: {ex.Message}", Hardcodet.Wpf.TaskbarNotification.BalloonIcon.Error);
+            }
+        }
+
+        private async void OnTestLatencyClicked(object? sender, RoutedEventArgs e)
+        {
+            if (_apiService == null) return;
+
+            // Close context menu immediately
+            NotifyIcon.ContextMenu.IsOpen = false;
+
+            try
+            {
+                // Test latency for all proxy groups
+                if (_cachedProxies?.Proxies != null)
+                {
+                    var latencyTasks = new List<Task>();
+
+                    foreach (var proxy in _cachedProxies.Proxies.Values)
+                    {
+                        if (proxy.Type.Equals("Selector", StringComparison.OrdinalIgnoreCase))
+                        {
+                            // Test latency for selector groups
+                            latencyTasks.Add(_apiService.TestGroupLatencyAsync(proxy.Name));
+                        }
+                        else if (proxy.All == null || proxy.All.Count == 0)
+                        {
+                            // Test latency for individual proxies
+                            latencyTasks.Add(_apiService.TestProxyLatencyAsync(proxy.Name));
+                        }
+                    }
+
+                    // Run all latency tests in parallel
+                    await Task.WhenAll(latencyTasks);
+
+                    NotifyIcon.ShowBalloonTip("Success", "Latency tests completed", Hardcodet.Wpf.TaskbarNotification.BalloonIcon.Info);
+                }
+            }
+            catch (Exception ex)
+            {
+                NotifyIcon.ShowBalloonTip("Error", $"Failed to run latency tests: {ex.Message}", Hardcodet.Wpf.TaskbarNotification.BalloonIcon.Error);
+            }
+        }
+
+        private async void OnTestGroupLatency(string groupName)
+        {
+            if (_apiService == null) return;
+
+            // Close context menu immediately
+            NotifyIcon.ContextMenu.IsOpen = false;
+
+            try
+            {
+                await _apiService.TestGroupLatencyAsync(groupName);
+                NotifyIcon.ShowBalloonTip("Success", $"Latency test completed for {groupName}", Hardcodet.Wpf.TaskbarNotification.BalloonIcon.Info);
+            }
+            catch (Exception ex)
+            {
+                NotifyIcon.ShowBalloonTip("Error", $"Failed to test latency for {groupName}: {ex.Message}", Hardcodet.Wpf.TaskbarNotification.BalloonIcon.Error);
             }
         }
 

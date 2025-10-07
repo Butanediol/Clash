@@ -24,6 +24,7 @@
                     <MenuItem Header="TUN Mode" Name="TunModeMenuItem" IsCheckable="True" Click="OnTunModeClicked" InputGestureText="Ctrl+E"/>
                     <Separator />
                     <MenuItem Header="Open Dashboard" Click="OnOpenDashboard" InputGestureText="Ctrl+D"/>
+                    <MenuItem Header="Test Latency" Name="TestLatencyMenuItem" Click="OnTestLatencyClicked"/>
                     <MenuItem Header="Configuration" Name="ConfigMenu">
                         <Separator />
                         <MenuItem Header="Reload Config" Click="OnReloadConfig" InputGestureText="Ctrl+R"/>
