@@ -38,8 +38,11 @@ namespace ClashXW.Services
         private MenuItem CreateProxyGroupMenuItem(ProxyNode group, Dictionary<string, ProxyNode> allProxies, Action<string, string> onProxyNodeSelected, Action<string> onTestGroupLatency)
         {
             var groupLatency = GetLatestLatency(group);
-            var groupHeader = groupLatency.HasValue ? $"{group.Name} ({group.Now})  [{groupLatency}ms]" : $"{group.Name} ({group.Now})";
-            var groupMenu = new MenuItem { Header = groupHeader };
+            var groupMenu = new MenuItem
+            {
+                Header = $"{group.Name} ({group.Now})",
+                InputGestureText = groupLatency.HasValue ? $"{groupLatency}ms" : ""
+            };
 
             // Add "Test Latency" button as the first item
             var testLatencyItem = new MenuItem
@@ -65,13 +68,13 @@ namespace ClashXW.Services
         private MenuItem CreateProxyNodeMenuItem(string groupName, string nodeName, string currentNode, Dictionary<string, ProxyNode> allProxies, Action<string, string> onProxyNodeSelected)
         {
             var nodeLatency = GetNodeLatency(nodeName, allProxies);
-            var nodeHeader = nodeLatency.HasValue ? $"{nodeName}  [{nodeLatency}ms]" : nodeName;
 
             var nodeItem = new MenuItem
             {
-                Header = nodeHeader,
+                Header = nodeName,
                 Tag = new Tuple<string, string>(groupName, nodeName),
-                IsChecked = nodeName.Equals(currentNode, StringComparison.OrdinalIgnoreCase)
+                IsChecked = nodeName.Equals(currentNode, StringComparison.OrdinalIgnoreCase),
+                InputGestureText = nodeLatency.HasValue ? $"{nodeLatency}ms" : ""
             };
             nodeItem.Click += (sender, e) => onProxyNodeSelected(groupName, nodeName);
             return nodeItem;
