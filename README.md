@@ -8,12 +8,12 @@
 2. Most GUI clients tend to mess up my config file, they don't fully respect my clash config.
 3. Most GUI clients install a service to avoid UAC prompts, convenient but I really don't like having another third-party service running background.
 4. Most GUI clients are ugly (sorry). They don't respect platform native design language.
-5. The old [ClashXW](https://github.com/ysc3839/ClashXW) is great, big shoutout to the original author, but it doesn't have a TUN toggle button. (And if you don't need a convenient TUN toggle button, it might be better to just use the original ClashXW)
+5. The old [ClashXW](https://github.com/ysc3839/ClashXW) is great, big shoutout to the original author, but it doesn't have a TUN toggle button, nor `hidden` property support. (If you don't need these features, it might be better to just use the original ClashXW)
 
 ## This is not for you if
 
-1. You don't know what Clash is.
-2. You don't know how to use Clash **core**.
+1. You don't know what Clash/Mihomo is.
+2. You don't know how to use Clash/Mihomo **core**.
 3. You want a fancy GUI client.
 4. You want minimal performance overhead, I am a shit coder, and this is a .NET WPF app after all.
 
@@ -53,3 +53,7 @@ dotnet publish --configuration Release
 ```
 
 The self-contained application will be located in the `bin/Release/net8.0-windows/publish/` directory.
+
+### TODO
+
+- [ ] Persistent config selection
